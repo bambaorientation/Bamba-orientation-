@@ -150,9 +150,10 @@
   .dest-intro{font-size:.9rem; opacity:.8; margin:6px 0 16px;}
   .dest-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
   .dest-item{text-align:center;}
-  .dest-svg{width:72px; height:72px; border-radius:10px; margin-bottom:6px;}
+  .dest-photo{width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:10px; margin-bottom:6px; background:var(--line);}
   .dest-item h3{font-size:.95rem; margin-bottom:4px;}
   .dest-item p{font-size:.78rem; opacity:.85;}
+  .dest-credit{display:block; font-size:.65rem; opacity:.5; margin-top:2px;}
 
   .gate-welcome{text-align:center; padding:6px 0 2px;}
   .gate-welcome-emoji{font-size:2.4rem; margin-bottom:12px;}
@@ -248,7 +249,7 @@
     <p>Un accompagnement complet, de l'orientation jusqu'à votre installation dans le pays de votre choix : France, Canada et plus.</p>
     <a class="btn btn-primary" href="#demande">Démarrer ma demande</a>
     <div class="icon-collage">
-      <div class="icon-pod">🎓</div>
+      <div class="icon-pod" id="ico-grad" role="button" style="cursor:pointer;">🎓</div>
       <div class="icon-pod" id="ico-avion" role="button" style="cursor:pointer;">✈️</div>
       <div class="icon-pod">🛂</div>
       <div class="icon-pod">🏠</div>
@@ -357,7 +358,11 @@
 <section id="demande">
   <div class="eyebrow">Faire une demande</div>
   <h2>Formulaire de demande en ligne</h2>
-  <form id="demande-form" method="POST">
+  <div id="demande-intro">
+    <p style="opacity:.85; margin-bottom:16px;">Prêt à vous lancer ? Remplissez notre formulaire de demande, notre équipe reviendra vers vous rapidement.</p>
+    <button type="button" id="demande-reveal-btn" class="btn btn-primary" style="width:auto;">Faire ma demande</button>
+  </div>
+  <form id="demande-form" method="POST" hidden>
     <input type="hidden" name="access_key" value="9a979d7d-1bf5-421c-8153-634ef996876a">
     <input type="hidden" name="subject" value="Nouvelle demande en ligne — BAMBA-ORIENTATION">
     <input type="hidden" name="from_name" value="BAMBA-ORIENTATION — Demande">
@@ -431,30 +436,69 @@
   <div class="dest-card">
     <button type="button" class="dest-close" id="dest-close">✕</button>
     <h2>Nos destinations</h2>
-    <p class="dest-intro">Un aperçu de chaque pays — monument emblématique et exemple d'université.</p>
+    <p class="dest-intro">Un monument emblématique de chaque pays.</p>
     <div class="dest-grid">
       <div class="dest-item">
-        <svg viewBox="0 0 120 120" class="dest-svg"><rect width="120" height="120" fill="#0B2545"/><path d="M60 20 L52 60 L46 100 L52 100 L58 68 L60 68 L62 100 L68 100 L62 60 Z" fill="#D4A017"/><path d="M45 60 L75 60 L70 66 L50 66 Z" fill="#D4A017"/><path d="M50 40 L70 40 L67 46 L53 46 Z" fill="#D4A017"/></svg>
+        <img class="dest-photo" loading="lazy" src="https://commons.wikimedia.org/wiki/Special:FilePath/Sous_la_Tour_Eiffel_1.jpg?width=400" alt="Tour Eiffel, Paris">
         <h3>🇫🇷 France</h3>
-        <p>Tour Eiffel, Paris — et des universités comme <strong>Sorbonne Université</strong> ou <strong>Université Paris-Saclay</strong>.</p>
+        <p>La Tour Eiffel, Paris.</p>
+        <span class="dest-credit">Photo : Jebulon / Wikimedia Commons</span>
       </div>
       <div class="dest-item">
-        <svg viewBox="0 0 120 120" class="dest-svg"><rect width="120" height="120" fill="#0B2545"/><path d="M60 15 L67 35 L60 30 L60 45 L70 55 L62 55 L62 70 L72 90 L48 90 L58 70 L58 55 L50 55 L60 45 L60 30 L53 35 Z" fill="#E8611C"/></svg>
+        <img class="dest-photo" loading="lazy" src="https://commons.wikimedia.org/wiki/Special:FilePath/CN_Tower,_Toronto,_Canada_(Unsplash_DJ_kOgH5u0o).jpg?width=400" alt="Tour CN, Toronto">
         <h3>🇨🇦 Canada</h3>
-        <p>Feuille d'érable, symbole national — et des universités comme <strong>Université de Montréal</strong> ou <strong>McGill</strong>.</p>
+        <p>La Tour CN, Toronto.</p>
+        <span class="dest-credit">Photo : Scott Webb / Wikimedia Commons</span>
       </div>
       <div class="dest-item">
-        <svg viewBox="0 0 120 120" class="dest-svg"><rect width="120" height="120" fill="#0B2545"/><rect x="56" y="25" width="8" height="55" fill="#D4A017"/><path d="M60 25 C45 30 45 45 60 50 C75 45 75 30 60 25" fill="#D4A017"/><rect x="40" y="80" width="40" height="8" fill="#D4A017"/></svg>
+        <img class="dest-photo" loading="lazy" src="https://commons.wikimedia.org/wiki/Special:FilePath/Statue_of_Liberty_National_Monument_STLI2261.jpg?width=400" alt="Statue de la Liberté, New York">
         <h3>🇺🇸 États-Unis</h3>
-        <p>Statue de la Liberté, New York — et des universités comme <strong>Harvard</strong> ou <strong>Arizona State University</strong>.</p>
+        <p>La Statue de la Liberté, New York.</p>
+        <span class="dest-credit">Photo : National Park Service</span>
       </div>
       <div class="dest-item">
-        <svg viewBox="0 0 120 120" class="dest-svg"><rect width="120" height="120" fill="#0B2545"/><circle cx="45" cy="45" r="10" fill="#D4A017"/><circle cx="75" cy="45" r="10" fill="#D4A017"/><circle cx="60" cy="70" r="10" fill="#D4A017"/><circle cx="45" cy="95" r="10" fill="#D4A017"/><circle cx="75" cy="95" r="10" fill="#D4A017"/><line x1="45" y1="45" x2="75" y2="45" stroke="#D4A017" stroke-width="4"/><line x1="45" y1="45" x2="60" y2="70" stroke="#D4A017" stroke-width="4"/><line x1="75" y1="45" x2="60" y2="70" stroke="#D4A017" stroke-width="4"/><line x1="60" y1="70" x2="45" y2="95" stroke="#D4A017" stroke-width="4"/><line x1="60" y1="70" x2="75" y2="95" stroke="#D4A017" stroke-width="4"/></svg>
+        <img class="dest-photo" loading="lazy" src="https://commons.wikimedia.org/wiki/Special:FilePath/The_Atomium's_NW_sphere_(DSCF1210).jpg?width=400" alt="Atomium, Bruxelles">
         <h3>🇧🇪 Belgique</h3>
-        <p>L'Atomium, Bruxelles — et des universités comme <strong>KU Leuven</strong> ou <strong>ULB</strong>.</p>
+        <p>L'Atomium, Bruxelles.</p>
+        <span class="dest-credit">Photo : Trougnouf / Wikimedia Commons</span>
       </div>
     </div>
     <a class="btn btn-primary" href="#demande" id="dest-cta" style="width:100%; margin-top:16px;">Faire ma demande pour l'une de ces destinations</a>
+  </div>
+</div>
+
+<div class="dest-overlay" id="uni-modal">
+  <div class="dest-card">
+    <button type="button" class="dest-close" id="uni-close">✕</button>
+    <h2>Universités reconnues</h2>
+    <p class="dest-intro">Un exemple d'université prestigieuse par pays.</p>
+    <div class="dest-grid">
+      <div class="dest-item">
+        <img class="dest-photo" loading="lazy" src="https://commons.wikimedia.org/wiki/Special:FilePath/Fa%C3%A7ade_chapelle_Sorbonne_Paris.jpg?width=400" alt="La Sorbonne, Paris">
+        <h3>🇫🇷 France</h3>
+        <p>La Sorbonne, Paris.</p>
+        <span class="dest-credit">Photo : Jebulon / Wikimedia Commons</span>
+      </div>
+      <div class="dest-item">
+        <img class="dest-photo" loading="lazy" src="https://commons.wikimedia.org/wiki/Special:FilePath/McgillMCTAVISHbroulliard.jpg?width=400" alt="Université McGill, Montréal">
+        <h3>🇨🇦 Canada</h3>
+        <p>Université McGill, Montréal.</p>
+        <span class="dest-credit">Photo : Wikimedia Commons</span>
+      </div>
+      <div class="dest-item">
+        <img class="dest-photo" loading="lazy" src="https://commons.wikimedia.org/wiki/Special:FilePath/The_Lowell_House_(Harvard_University).jpg?width=400" alt="Université Harvard">
+        <h3>🇺🇸 États-Unis</h3>
+        <p>Université Harvard.</p>
+        <span class="dest-credit">Photo : Carrie / Wikimedia Commons</span>
+      </div>
+      <div class="dest-item">
+        <img class="dest-photo" loading="lazy" src="https://commons.wikimedia.org/wiki/Special:FilePath/Castle_Arenberg,_Katholieke_Universiteit_Leuven_adj.jpg?width=400" alt="KU Leuven, Belgique">
+        <h3>🇧🇪 Belgique</h3>
+        <p>KU Leuven (château d'Arenberg).</p>
+        <span class="dest-credit">Photo : Wikimedia Commons</span>
+      </div>
+    </div>
+    <a class="btn btn-primary" href="#demande" id="uni-cta" style="width:100%; margin-top:16px;">Faire ma demande pour l'une de ces destinations</a>
   </div>
 </div>
 
@@ -670,6 +714,21 @@
   document.getElementById('ico-flagbadge').addEventListener('click', openDest);
   document.getElementById('dest-close').addEventListener('click', closeDest);
   destModal.addEventListener('click', function(e){ if(e.target === destModal) closeDest(); });
+
+  var uniModal = document.getElementById('uni-modal');
+  function openUni(e){ if(e) e.preventDefault(); uniModal.classList.add('open'); }
+  function closeUni(){ uniModal.classList.remove('open'); }
+  document.getElementById('ico-grad').addEventListener('click', openUni);
+  document.getElementById('uni-close').addEventListener('click', closeUni);
+  uniModal.addEventListener('click', function(e){ if(e.target === uniModal) closeUni(); });
+  var demandeIntro = document.getElementById('demande-intro');
+  function showDemandeForm(){
+    demandeIntro.style.display = 'none';
+    demandeForm.hidden = false;
+  }
+  document.getElementById('demande-reveal-btn').addEventListener('click', showDemandeForm);
+  document.getElementById('dest-cta').addEventListener('click', function(){ closeDest(); showDemandeForm(); });
+  document.getElementById('uni-cta').addEventListener('click', function(){ closeUni(); showDemandeForm(); });
 })();
 </script>
 </body>
