@@ -143,6 +143,17 @@
   .btn-ghost-sm{background:transparent; border:1.5px solid var(--navy) !important; color:var(--navy);}
   .hp{position:absolute; left:-9999px; top:-9999px;}
 
+  .dest-overlay{position:fixed; inset:0; background:rgba(11,37,69,.72); z-index:60; display:none; align-items:flex-start; justify-content:center; padding:16px; overflow-y:auto;}
+  .dest-overlay.open{display:flex;}
+  .dest-card{background:var(--paper); border-radius:16px; padding:24px 18px; max-width:480px; width:100%; margin-top:40px; position:relative;}
+  .dest-close{position:absolute; top:12px; right:12px; background:none; border:none; font-size:1.3rem; color:var(--ink); cursor:pointer;}
+  .dest-intro{font-size:.9rem; opacity:.8; margin:6px 0 16px;}
+  .dest-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .dest-item{text-align:center;}
+  .dest-svg{width:72px; height:72px; border-radius:10px; margin-bottom:6px;}
+  .dest-item h3{font-size:.95rem; margin-bottom:4px;}
+  .dest-item p{font-size:.78rem; opacity:.85;}
+
   .gate-welcome{text-align:center; padding:6px 0 2px;}
   .gate-welcome-emoji{font-size:2.4rem; margin-bottom:12px;}
   .gate-welcome h2{margin-bottom:12px; max-width:none;}
@@ -193,19 +204,9 @@
 
     <div class="gate-progress" id="gate-progress" hidden>Question 1/6</div>
     <form id="gate-form" method="POST" hidden>
-      <input type="hidden" name="_subject" value="Nouvelle réponse au questionnaire — BAMBA-ORIENTATION">
-      <input type="hidden" name="_template" value="table">
-      <input type="hidden" name="_captcha" value="false">
-      <p class="hp"><label>Ne pas remplir<input name="_honey"></label></p>
-
       <div class="gate-step">
-        <label>Votre nom complet
-          <input type="text" name="nom" required>
-        </label>
-      </div>
-      <div class="gate-step" hidden>
-        <label>Votre âge
-          <input type="number" name="age" min="14" max="70" placeholder="ex : 19" required>
+        <label>Votre adresse email
+          <input type="email" name="email" required placeholder="exemple@gmail.com">
         </label>
       </div>
       <div class="gate-step" hidden>
@@ -215,83 +216,6 @@
             <option>Homme</option>
             <option>Femme</option>
           </select>
-        </label>
-      </div>
-      <div class="gate-step" hidden>
-        <label>Vous êtes
-          <select name="fonction" required>
-            <option value="">Choisir…</option>
-            <option>Élève / Bachelier</option>
-            <option>Étudiant</option>
-            <option>Parent</option>
-            <option>Autre</option>
-          </select>
-        </label>
-      </div>
-      <div class="gate-step" hidden>
-        <label>Comment avez-vous connu notre site ?
-          <select name="source" required>
-            <option value="">Choisir…</option>
-            <option>WhatsApp</option>
-            <option>Facebook / Réseaux sociaux</option>
-            <option>Bouche à oreille</option>
-            <option>Affiche</option>
-            <option>Autre</option>
-          </select>
-        </label>
-      </div>
-      <div class="gate-step" hidden>
-        <label>Quelle destination vous intéresse le plus ?
-          <select name="destination" required>
-            <option value="">Choisir…</option>
-            <option>France</option>
-            <option>Canada</option>
-            <option>Autre pays</option>
-            <option>Pas encore décidé</option>
-          </select>
-        </label>
-      </div>
-      <div class="gate-step" hidden>
-        <label>Où en êtes-vous dans votre projet d'études ?
-          <select name="avancement" required>
-            <option value="">Choisir…</option>
-            <option>Je commence tout juste à me renseigner</option>
-            <option>J'ai déjà un dossier en cours ailleurs</option>
-            <option>J'ai déjà été refusé quelque part</option>
-            <option>Autre</option>
-          </select>
-        </label>
-      </div>
-      <div class="gate-step" hidden>
-        <label>Quelle est (ou sera) votre série au baccalauréat ?
-          <select name="serie" required>
-            <option value="">Choisir…</option>
-            <option>S1</option>
-            <option>S2</option>
-            <option>S3</option>
-            <option>L1</option>
-            <option>L1a</option>
-            <option>L2</option>
-            <option>L2a</option>
-            <option>G</option>
-            <option>T</option>
-            <option>Autre</option>
-          </select>
-        </label>
-      </div>
-      <div class="gate-step" hidden>
-        <label>En quelle année avez-vous obtenu (ou comptez obtenir) votre baccalauréat ?
-          <input type="number" name="annee_bac" min="2015" max="2030" placeholder="ex : 2024" required>
-        </label>
-      </div>
-      <div class="gate-step" hidden>
-        <label>Quelle moyenne avez-vous eue (ou visez-vous) au baccalauréat ?
-          <input type="number" name="moyenne_bac" min="0" max="20" step="0.01" placeholder="ex : 12.5" required>
-        </label>
-      </div>
-      <div class="gate-step" hidden>
-        <label>Votre adresse email
-          <input type="email" name="email" required placeholder="exemple@gmail.com">
         </label>
       </div>
 
@@ -308,7 +232,7 @@
 <header class="mainbar">
   <div class="wrap">
     <div class="brand">BAMBA-<span>ORIENTATION</span></div>
-    <div class="flagbadge">🌍 France · Canada · +</div>
+    <div class="flagbadge" id="ico-flagbadge" role="button" style="cursor:pointer;">🌍 France · Canada · +</div>
   </div>
 </header>
 <div class="searchbar-wrap">
@@ -322,10 +246,10 @@
   <div class="hero-inner">
     <h1>Étudier &amp; réussir à l'étranger</h1>
     <p>Un accompagnement complet, de l'orientation jusqu'à votre installation dans le pays de votre choix : France, Canada et plus.</p>
-    <a class="btn btn-primary" href="https://wa.me/221786926592">Démarrer ma demande</a>
+    <a class="btn btn-primary" href="#demande">Démarrer ma demande</a>
     <div class="icon-collage">
       <div class="icon-pod">🎓</div>
-      <div class="icon-pod">✈️</div>
+      <div class="icon-pod" id="ico-avion" role="button" style="cursor:pointer;">✈️</div>
       <div class="icon-pod">🛂</div>
       <div class="icon-pod">🏠</div>
     </div>
@@ -333,12 +257,12 @@
 </div>
 
 <div class="cats">
-  <div class="cat"><div class="ico c1">🧭</div><span>Orientation</span></div>
-  <div class="cat"><div class="ico c2">📝</div><span>Préinscription</span></div>
-  <div class="cat"><div class="ico c3">🎤</div><span>Entretiens</span></div>
-  <div class="cat"><div class="ico c4">🏠</div><span>Logement</span></div>
-  <div class="cat"><div class="ico c5">✈️</div><span>Billet</span></div>
-  <div class="cat"><div class="ico c6">🛂</div><span>Visa</span></div>
+  <a class="cat" href="#services"><div class="ico c1">🧭</div><span>Orientation</span></a>
+  <a class="cat" href="#processus"><div class="ico c2">📝</div><span>Préinscription</span></a>
+  <a class="cat" href="#processus"><div class="ico c3">🎤</div><span>Entretiens</span></a>
+  <a class="cat" href="#processus"><div class="ico c4">🏠</div><span>Logement</span></a>
+  <a class="cat" href="#" id="ico-billet"><div class="ico c5">✈️</div><span>Billet</span></a>
+  <a class="cat" href="#processus"><div class="ico c6">🛂</div><span>Visa</span></a>
 </div>
 
 <section id="services">
@@ -375,34 +299,11 @@
   <div class="eyebrow">Ils nous font confiance</div>
   <h2>Témoignages</h2>
   <div class="testi-grid" id="testi-grid">
-    <!-- Pour ajouter un témoignage, copier ce bloc et remplacer le contenu :
-    <div class="testi-card">
-      <div class="testi-stars">★★★★★</div>
-      <p class="testi-quote">"Commentaire de l'étudiant ici."</p>
-      <div class="testi-name">Nom — Destination</div>
-    </div>
-    -->
-    <p class="testi-empty">Les premiers témoignages arrivent bientôt — vous serez peut-être parmi les premiers à nous faire confiance !</p>
+    <p class="testi-empty" id="testi-empty">Les premiers témoignages arrivent bientôt — vous serez peut-être parmi les premiers à nous faire confiance !</p>
   </div>
-</section>
 
-<section id="faq">
-  <div class="eyebrow">Questions fréquentes</div>
-  <h2>Ce que nos futurs étudiants demandent</h2>
-  <details><summary>Combien coûte l'accompagnement ?</summary><p>Le coût dépend des services choisis et de votre projet. Contactez-nous sur WhatsApp pour un devis personnalisé et gratuit.</p></details>
-  <details><summary>Combien de temps prend une préinscription ?</summary><p>Les délais varient selon l'établissement et la période de l'année. Nous vous donnons un calendrier précis dès la consultation initiale.</p></details>
-  <details><summary>Que se passe-t-il en cas de refus de visa ?</summary><p>Nous analysons avec vous les motifs du refus et vous accompagnons pour préparer un nouveau dossier ou explorer d'autres options.</p></details>
-  <details><summary>Quelles destinations proposez-vous ?</summary><p>Nous accompagnons vers la France, le Canada et d'autres destinations. C'est vous qui choisissez le pays qui correspond le mieux à votre projet ; nous vous conseillons pour vous aider à décider.</p></details>
-</section>
-
-<section id="avis">
-  <div class="eyebrow">Votre avis compte</div>
-  <h2>Donnez-nous votre appréciation</h2>
-  <form id="avis-form" method="POST">
-    <input type="hidden" name="_subject" value="Nouvel avis reçu — BAMBA-ORIENTATION">
-    <input type="hidden" name="_template" value="table">
-    <input type="hidden" name="_captcha" value="false">
-    <p class="hp"><label>Ne pas remplir<input name="_honey"></label></p>
+  <form id="avis-form" method="POST" style="margin-top:22px;">
+    <input type="checkbox" name="botcheck" class="hp" style="display:none;">
     <label>Votre note
       <div class="stars">
         <input type="radio" id="star5" name="note" value="5"><label for="star5">★</label>
@@ -415,12 +316,103 @@
     <label>Votre nom (optionnel)
       <input type="text" name="nom_avis">
     </label>
-    <label>Votre commentaire
+    <label>Votre témoignage
       <textarea name="commentaire" rows="3" required></textarea>
     </label>
-    <button type="submit" class="btn btn-primary" style="width:auto;">Envoyer mon avis</button>
+    <button type="submit" class="btn btn-primary" style="width:auto;">Envoyer mon témoignage</button>
   </form>
-  <p id="avis-merci" style="display:none;">Merci pour votre avis, c'est précieux pour nous ! 🙏</p>
+  <p id="avis-merci" style="display:none;">Merci pour votre témoignage, c'est précieux pour nous ! 🙏</p>
+</section>
+
+<section id="commentaires">
+  <div class="eyebrow">Discussion</div>
+  <h2>Commentaires des visiteurs</h2>
+  <div class="testi-grid" id="comments-list">
+    <p class="testi-empty" id="comments-empty">Aucun commentaire pour le moment. Soyez le premier à en laisser un !</p>
+  </div>
+
+  <form id="comment-form" method="POST" style="margin-top:22px;">
+    <input type="checkbox" name="botcheck" class="hp" style="display:none;">
+    <label>Votre nom (optionnel)
+      <input type="text" name="nom_comment">
+    </label>
+    <label>Votre commentaire
+      <textarea name="message_comment" rows="3" required></textarea>
+    </label>
+    <button type="submit" class="btn btn-primary" style="width:auto;">Publier mon commentaire</button>
+  </form>
+  <p class="gate-welcome-notice" style="max-width:none; text-align:left; margin-top:8px;">Votre commentaire sera visible sur le site après validation par notre équipe.</p>
+  <p id="comment-merci" style="display:none;">Merci ! Votre commentaire est en attente de validation. 🙏</p>
+</section>
+
+<section id="faq">
+  <div class="eyebrow">Questions fréquentes</div>
+  <h2>Ce que nos futurs étudiants demandent</h2>
+  <details><summary>Combien coûte l'accompagnement ?</summary><p>Le coût dépend des services choisis et de votre projet. Contactez-nous sur WhatsApp pour un devis personnalisé et gratuit.</p></details>
+  <details><summary>Combien de temps prend une préinscription ?</summary><p>Les délais varient selon l'établissement et la période de l'année. Nous vous donnons un calendrier précis dès la consultation initiale.</p></details>
+  <details><summary>Que se passe-t-il en cas de refus de visa ?</summary><p>Nous analysons avec vous les motifs du refus et vous accompagnons pour préparer un nouveau dossier ou explorer d'autres options.</p></details>
+  <details><summary>Quelles destinations proposez-vous ?</summary><p>Nous accompagnons vers la France, le Canada, les États-Unis, la Belgique et d'autres destinations. C'est vous qui choisissez le pays qui correspond le mieux à votre projet ; nous vous conseillons pour vous aider à décider.</p></details>
+</section>
+
+<section id="demande">
+  <div class="eyebrow">Faire une demande</div>
+  <h2>Formulaire de demande en ligne</h2>
+  <form id="demande-form" method="POST">
+    <input type="hidden" name="access_key" value="9a979d7d-1bf5-421c-8153-634ef996876a">
+    <input type="hidden" name="subject" value="Nouvelle demande en ligne — BAMBA-ORIENTATION">
+    <input type="hidden" name="from_name" value="BAMBA-ORIENTATION — Demande">
+    <input type="checkbox" name="botcheck" class="hp" style="display:none;">
+    <label>Votre prénom
+      <input type="text" name="prenom" required>
+    </label>
+    <label>Votre nom
+      <input type="text" name="nom" required>
+    </label>
+    <label>Votre numéro de mobile
+      <input type="tel" name="mobile" required placeholder="ex : 77 123 45 67">
+    </label>
+    <label>Votre adresse
+      <input type="text" name="adresse" required>
+    </label>
+    <label>Votre ville
+      <input type="text" name="ville" required>
+    </label>
+    <label>Votre nationalité
+      <input type="text" name="nationalite" required>
+    </label>
+    <label>Votre série / filière en cours
+      <input type="text" name="serie_filiere" required placeholder="ex : S2, ou Licence Gestion">
+    </label>
+    <label>Votre niveau d'étude
+      <select name="niveau_etude" required>
+        <option value="">Choisir…</option>
+        <option>Terminale / Bachelier</option>
+        <option>Licence 1</option>
+        <option>Licence 2</option>
+        <option>Licence 3</option>
+        <option>Master</option>
+        <option>Autre</option>
+      </select>
+    </label>
+    <label>Votre moyenne (à confirmer avec vos bulletins/diplômes)
+      <input type="number" name="moyenne" min="0" max="20" step="0.01" placeholder="ex : 12.5" required>
+    </label>
+    <label>Choisir votre destination
+      <select name="destination" required>
+        <option value="">Choisir…</option>
+        <option>France</option>
+        <option>Canada</option>
+        <option>États-Unis</option>
+        <option>Belgique</option>
+        <option>Pas encore décidé</option>
+      </select>
+    </label>
+    <label>Votre message
+      <textarea name="message" rows="4" required></textarea>
+    </label>
+    <button type="submit" class="btn btn-primary" style="width:auto;">Envoyer ma demande</button>
+  </form>
+  <p id="demande-merci" style="display:none;">Merci pour votre demande ! Notre équipe vous contactera très bientôt. 🎓</p>
 </section>
 
 <section id="contact" style="border-bottom:none;">
@@ -435,18 +427,63 @@
   </div>
 </section>
 
+<div class="dest-overlay" id="dest-modal">
+  <div class="dest-card">
+    <button type="button" class="dest-close" id="dest-close">✕</button>
+    <h2>Nos destinations</h2>
+    <p class="dest-intro">Un aperçu de chaque pays — monument emblématique et exemple d'université.</p>
+    <div class="dest-grid">
+      <div class="dest-item">
+        <svg viewBox="0 0 120 120" class="dest-svg"><rect width="120" height="120" fill="#0B2545"/><path d="M60 20 L52 60 L46 100 L52 100 L58 68 L60 68 L62 100 L68 100 L62 60 Z" fill="#D4A017"/><path d="M45 60 L75 60 L70 66 L50 66 Z" fill="#D4A017"/><path d="M50 40 L70 40 L67 46 L53 46 Z" fill="#D4A017"/></svg>
+        <h3>🇫🇷 France</h3>
+        <p>Tour Eiffel, Paris — et des universités comme <strong>Sorbonne Université</strong> ou <strong>Université Paris-Saclay</strong>.</p>
+      </div>
+      <div class="dest-item">
+        <svg viewBox="0 0 120 120" class="dest-svg"><rect width="120" height="120" fill="#0B2545"/><path d="M60 15 L67 35 L60 30 L60 45 L70 55 L62 55 L62 70 L72 90 L48 90 L58 70 L58 55 L50 55 L60 45 L60 30 L53 35 Z" fill="#E8611C"/></svg>
+        <h3>🇨🇦 Canada</h3>
+        <p>Feuille d'érable, symbole national — et des universités comme <strong>Université de Montréal</strong> ou <strong>McGill</strong>.</p>
+      </div>
+      <div class="dest-item">
+        <svg viewBox="0 0 120 120" class="dest-svg"><rect width="120" height="120" fill="#0B2545"/><rect x="56" y="25" width="8" height="55" fill="#D4A017"/><path d="M60 25 C45 30 45 45 60 50 C75 45 75 30 60 25" fill="#D4A017"/><rect x="40" y="80" width="40" height="8" fill="#D4A017"/></svg>
+        <h3>🇺🇸 États-Unis</h3>
+        <p>Statue de la Liberté, New York — et des universités comme <strong>Harvard</strong> ou <strong>Arizona State University</strong>.</p>
+      </div>
+      <div class="dest-item">
+        <svg viewBox="0 0 120 120" class="dest-svg"><rect width="120" height="120" fill="#0B2545"/><circle cx="45" cy="45" r="10" fill="#D4A017"/><circle cx="75" cy="45" r="10" fill="#D4A017"/><circle cx="60" cy="70" r="10" fill="#D4A017"/><circle cx="45" cy="95" r="10" fill="#D4A017"/><circle cx="75" cy="95" r="10" fill="#D4A017"/><line x1="45" y1="45" x2="75" y2="45" stroke="#D4A017" stroke-width="4"/><line x1="45" y1="45" x2="60" y2="70" stroke="#D4A017" stroke-width="4"/><line x1="75" y1="45" x2="60" y2="70" stroke="#D4A017" stroke-width="4"/><line x1="60" y1="70" x2="45" y2="95" stroke="#D4A017" stroke-width="4"/><line x1="60" y1="70" x2="75" y2="95" stroke="#D4A017" stroke-width="4"/></svg>
+        <h3>🇧🇪 Belgique</h3>
+        <p>L'Atomium, Bruxelles — et des universités comme <strong>KU Leuven</strong> ou <strong>ULB</strong>.</p>
+      </div>
+    </div>
+    <a class="btn btn-primary" href="#demande" id="dest-cta" style="width:100%; margin-top:16px;">Faire ma demande pour l'une de ces destinations</a>
+  </div>
+</div>
+
 <footer>BAMBA-ORIENTATION — Études, avenir, réussite. © 2026</footer>
 
 <nav class="botnav">
   <a href="#" class="active"><span class="bi">🏠</span>Accueil</a>
   <a href="#services"><span class="bi">🧭</span>Services</a>
-  <a href="#processus"><span class="bi">📋</span>Processus</a>
+  <a href="#demande"><span class="bi">📝</span>Demande</a>
   <a href="https://wa.me/221786926592"><span class="bi">💬</span>Contact</a>
 </nav>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey: "AIzaSyBRHw1OHCjuCfNCmBze1ZUo9v3VPcUKOuA",
+    authDomain: "bamba-orientation.firebaseapp.com",
+    projectId: "bamba-orientation",
+    storageBucket: "bamba-orientation.firebasestorage.app",
+    messagingSenderId: "6927549442",
+    appId: "1:6927549442:web:f483367be5a950b327131b"
+  });
+  var db = firebase.firestore();
+</script>
 <script>
 (function(){
-  var KEY = 'bo_identified_v4';
+  var KEY = 'bo_identified_v5';
   var gate = document.getElementById('gate');
   var body = document.body;
   var already = false;
@@ -493,15 +530,7 @@
     e.preventDefault();
     var f = currentField();
     if(!f.checkValidity()){ f.reportValidity(); return; }
-
-    var data = Object.fromEntries(new FormData(form));
-    fetch('https://formsubmit.co/ajax/dimkhandao2007@gmail.com', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Accept':'application/json'},
-      body: JSON.stringify(data)
-    }).catch(function(){});
     try{ localStorage.setItem(KEY,'1'); }catch(e){}
-
     gate.style.display = 'none';
     body.style.overflow = '';
   });
@@ -510,15 +539,137 @@
   var avisMerci = document.getElementById('avis-merci');
   avisForm.addEventListener('submit', function(e){
     e.preventDefault();
-    var data = Object.fromEntries(new FormData(avisForm));
-    fetch('https://formsubmit.co/ajax/dimkhandao2007@gmail.com', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Accept':'application/json'},
-      body: JSON.stringify(data)
-    }).catch(function(){});
-    avisForm.hidden = true;
-    avisMerci.style.display = 'block';
+    var btn = avisForm.querySelector('button[type="submit"]');
+    var noteInput = avisForm.querySelector('input[name="note"]:checked');
+    if(!noteInput){ alert('Merci de choisir une note en étoiles.'); return; }
+    btn.disabled = true;
+    db.collection('testimonials').add({
+      note: parseInt(noteInput.value, 10),
+      nom: (avisForm.nom_avis.value || 'Visiteur').trim(),
+      message: avisForm.commentaire.value.trim(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function(){
+      avisForm.hidden = true;
+      avisMerci.style.display = 'block';
+      loadTestimonials();
+    }).catch(function(){
+      btn.disabled = false;
+      alert('Connexion impossible. Vérifiez votre connexion internet et réessayez.');
+    });
   });
+
+  function starString(n){
+    var s = ''; for(var i=0;i<5;i++){ s += (i<n ? '★' : '☆'); } return s;
+  }
+
+  function loadTestimonials(){
+    var grid = document.getElementById('testi-grid');
+    var empty = document.getElementById('testi-empty');
+    db.collection('testimonials').orderBy('createdAt','desc').limit(20).get().then(function(snap){
+      if(snap.empty) return;
+      if(empty) empty.remove();
+      grid.innerHTML = '';
+      snap.forEach(function(doc){
+        var d = doc.data();
+        var card = document.createElement('div');
+        card.className = 'testi-card';
+        card.innerHTML = '<div class="testi-stars">'+starString(d.note||5)+'</div>'+
+          '<p class="testi-quote">"'+(d.message||'').replace(/</g,'&lt;')+'"</p>'+
+          '<div class="testi-name">'+(d.nom||'Visiteur').replace(/</g,'&lt;')+'</div>';
+        grid.appendChild(card);
+      });
+    }).catch(function(){});
+  }
+  loadTestimonials();
+
+  var commentForm = document.getElementById('comment-form');
+  var commentMerci = document.getElementById('comment-merci');
+  commentForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var btn = commentForm.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    db.collection('comments').add({
+      nom: (commentForm.nom_comment.value || 'Visiteur').trim(),
+      message: commentForm.message_comment.value.trim(),
+      approved: false,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function(){
+      commentForm.hidden = true;
+      commentMerci.style.display = 'block';
+      fetch('https://api.web3forms.com/submit', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body: JSON.stringify({
+          access_key: '9a979d7d-1bf5-421c-8153-634ef996876a',
+          subject: 'Nouveau commentaire à valider — BAMBA-ORIENTATION',
+          from_name: 'BAMBA-ORIENTATION — Commentaire',
+          nom: commentForm.nom_comment.value,
+          message: commentForm.message_comment.value
+        })
+      }).catch(function(){});
+    }).catch(function(){
+      btn.disabled = false;
+      alert('Connexion impossible. Vérifiez votre connexion internet et réessayez.');
+    });
+  });
+
+  function loadComments(){
+    var list = document.getElementById('comments-list');
+    var empty = document.getElementById('comments-empty');
+    db.collection('comments').where('approved','==',true).get().then(function(snap){
+      if(snap.empty) return;
+      var docs = [];
+      snap.forEach(function(doc){ docs.push(doc.data()); });
+      docs.sort(function(a,b){
+        var ta = a.createdAt ? a.createdAt.toMillis() : 0;
+        var tb = b.createdAt ? b.createdAt.toMillis() : 0;
+        return tb - ta;
+      });
+      if(empty) empty.remove();
+      list.innerHTML = '';
+      docs.forEach(function(d){
+        var card = document.createElement('div');
+        card.className = 'testi-card';
+        card.innerHTML = '<p class="testi-quote">"'+(d.message||'').replace(/</g,'&lt;')+'"</p>'+
+          '<div class="testi-name">'+(d.nom||'Visiteur').replace(/</g,'&lt;')+'</div>';
+        list.appendChild(card);
+      });
+    }).catch(function(){});
+  }
+  loadComments();
+
+  var demandeForm = document.getElementById('demande-form');
+  var demandeMerci = document.getElementById('demande-merci');
+  demandeForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var btn = demandeForm.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    var data = Object.fromEntries(new FormData(demandeForm));
+    db.collection('requests').add(Object.assign({}, data, {
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    })).then(function(){
+      return fetch('https://api.web3forms.com/submit', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body: JSON.stringify(data)
+      });
+    }).then(function(){
+      demandeForm.hidden = true;
+      demandeMerci.style.display = 'block';
+    }).catch(function(){
+      btn.disabled = false;
+      alert('Connexion impossible. Vérifiez votre connexion internet et réessayez.');
+    });
+  });
+
+  var destModal = document.getElementById('dest-modal');
+  function openDest(e){ if(e) e.preventDefault(); destModal.classList.add('open'); }
+  function closeDest(){ destModal.classList.remove('open'); }
+  document.getElementById('ico-avion').addEventListener('click', openDest);
+  document.getElementById('ico-billet').addEventListener('click', openDest);
+  document.getElementById('ico-flagbadge').addEventListener('click', openDest);
+  document.getElementById('dest-close').addEventListener('click', closeDest);
+  destModal.addEventListener('click', function(e){ if(e.target === destModal) closeDest(); });
 })();
 </script>
 </body>

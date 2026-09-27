@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Administration — BAMBA-ORIENTATION</title>
+<style>
+  body{font-family:system-ui,sans-serif; background:#12161C; color:#EDEAE2; margin:0; padding:20px;}
+  h1{font-size:1.2rem; color:#E9C77A;}
+  h2{font-size:1rem; margin:26px 0 10px; color:#E9C77A;}
+  .card{background:#181D25; border:1px solid #2A313C; border-radius:10px; padding:14px; margin-bottom:10px;}
+  .card p{margin:4px 0; font-size:.9rem;}
+  .card .meta{opacity:.7; font-size:.78rem;}
+  button{border:none; border-radius:8px; padding:9px 14px; font-weight:600; margin-right:8px; margin-top:8px; cursor:pointer;}
+  .approve{background:#2E7D32; color:#fff;}
+  .reject{background:#B3261E; color:#fff;}
+  #login{max-width:320px; margin:60px auto;}
+  input{width:100%; padding:10px; margin:6px 0; border-radius:8px; border:1px solid #2A313C; background:#181D25; color:#EDEAE2;}
+  #login button{background:#D4A017; color:#12161C; width:100%;}
+  #app{display:none;}
+  .empty{opacity:.6; font-size:.85rem;}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <h1>Connexion administrateur</h1>
+  <input type="email" id="admin-email" placeholder="Email">
+  <input type="password" id="admin-pass" placeholder="Mot de passe">
+  <button id="login-btn">Se connecter</button>
+  <p id="login-error" style="color:#E8611C; font-size:.85rem;"></p>
+</div>
+
+<div id="app">
+  <h1>Administration — BAMBA-ORIENTATION</h1>
+
+  <h2>Commentaires en attente de validation</h2>
+  <div id="pending-comments"><p class="empty">Chargement…</p></div>
+
+  <h2>Témoignages publiés</h2>
+  <div id="all-testimonials"><p class="empty">Chargement…</p></div>
+
+  <h2>Demandes en ligne reçues</h2>
+  <div id="all-requests"><p class="empty">Chargement…</p></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyBRHw1OHCjuCfNCmBze1ZUo9v3VPcUKOuA",
+  authDomain: "bamba-orientation.firebaseapp.com",
+  projectId: "bamba-orientation",
+  storageBucket: "bamba-orientation.firebasestorage.app",
+  messagingSenderId: "6927549442",
+  appId: "1:6927549442:web:f483367be5a950b327131b"
+});
+var db = firebase.firestore();
+var auth = firebase.auth();
+
+document.getElementById('login-btn').addEventListener('click', function(){
+  var email = document.getElementById('admin-email').value.trim();
+  var pass = document.getElementById('admin-pass').value;
+  auth.signInWithEmailAndPassword(email, pass).catch(function(err){
+    document.getElementById('login-error').textContent = 'Connexion refusée : vérifiez l\'email et le mot de passe.';
+  });
+});
+
+auth.onAuthStateChanged(function(user){
+  if(user){
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadPendingComments();
+    loadTestimonials();
+    loadRequests();
+  } else {
+    document.getElementById('login').style.display = 'block';
+    document.getElementById('app').style.display = 'none';
+  }
+});
+
+function esc(s){ return (s||'').toString().replace(/</g,'&lt;'); }
+function fmtDate(ts){ try{ return ts.toDate().toLocaleString('fr-FR'); }catch(e){ return ''; } }
+
+function loadPendingComments(){
+  var box = document.getElementById('pending-comments');
+  db.collection('comments').where('approved','==',false).get().then(function(snap){
+    if(snap.empty){ box.innerHTML = '<p class="empty">Aucun commentaire en attente.</p>'; return; }
+    box.innerHTML = '';
+    snap.forEach(function(doc){
+      var d = doc.data();
+      var div = document.createElement('div');
+      div.className = 'card';
+      div.innerHTML = '<p><strong>'+esc(d.nom||'Visiteur')+'</strong></p>'+
+        '<p>'+esc(d.message)+'</p>'+
+        '<p class="meta">'+fmtDate(d.createdAt)+'</p>';
+      var approveBtn = document.createElement('button');
+      approveBtn.className = 'approve'; approveBtn.textContent = '✅ Valider';
+      approveBtn.onclick = function(){ db.collection('comments').doc(doc.id).update({approved:true}).then(function(){ loadPendingComments(); }); };
+      var rejectBtn = document.createElement('button');
+      rejectBtn.className = 'reject'; rejectBtn.textContent = '✕ Supprimer';
+      rejectBtn.onclick = function(){ db.collection('comments').doc(doc.id).delete().then(function(){ loadPendingComments(); }); };
+      div.appendChild(approveBtn); div.appendChild(rejectBtn);
+      box.appendChild(div);
+    });
+  });
+}
+
+function loadTestimonials(){
+  var box = document.getElementById('all-testimonials');
+  db.collection('testimonials').orderBy('createdAt','desc').get().then(function(snap){
+    if(snap.empty){ box.innerHTML = '<p class="empty">Aucun témoignage.</p>'; return; }
+    box.innerHTML = '';
+    snap.forEach(function(doc){
+      var d = doc.data();
+      var div = document.createElement('div');
+      div.className = 'card';
+      div.innerHTML = '<p><strong>'+esc(d.nom)+'</strong> — '+(d.note||'')+'★</p>'+
+        '<p>'+esc(d.message)+'</p><p class="meta">'+fmtDate(d.createdAt)+'</p>';
+      var delBtn = document.createElement('button');
+      delBtn.className = 'reject'; delBtn.textContent = '✕ Supprimer';
+      delBtn.onclick = function(){ db.collection('testimonials').doc(doc.id).delete().then(function(){ loadTestimonials(); }); };
+      div.appendChild(delBtn);
+      box.appendChild(div);
+    });
+  });
+}
+
+function loadRequests(){
+  var box = document.getElementById('all-requests');
+  db.collection('requests').orderBy('createdAt','desc').get().then(function(snap){
+    if(snap.empty){ box.innerHTML = '<p class="empty">Aucune demande.</p>'; return; }
+    box.innerHTML = '';
+    snap.forEach(function(doc){
+      var d = doc.data();
+      var div = document.createElement('div');
+      div.className = 'card';
+      div.innerHTML = '<p><strong>'+esc(d.prenom)+' '+esc(d.nom)+'</strong> — '+esc(d.destination)+'</p>'+
+        '<p>📱 '+esc(d.mobile)+' · 🏙️ '+esc(d.ville)+' · 🌍 '+esc(d.nationalite)+'</p>'+
+        '<p>🎓 '+esc(d.niveau_etude)+' · '+esc(d.serie_filiere)+' · Moyenne : '+esc(d.moyenne)+'</p>'+
+        '<p>"'+esc(d.message)+'"</p>'+
+        '<p class="meta">'+fmtDate(d.createdAt)+'</p>';
+      box.appendChild(div);
+    });
+  });
+}
+</script>
+</body>
+</html>
