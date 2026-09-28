@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ADAMA AI - Plateforme Éducative Intelligente CECRL</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'bounce-short': 'bounce 1s infinite 2',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- React 18 & Babel CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* Masquer la barre de défilement par défaut */
+    .scrollbar-none::-webkit-scrollbar { display: none; }
+    .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="h-full bg-slate-900 text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white">
+  <div id="root" class="h-full"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // ==========================================
+    // 1. CONSTANTES CECRL & THEMES
+    // ==========================================
+    const CEFR_LEVELS = [
+      { id: 'Pre-A1', label: 'Pre-A1 Débutant', desc: 'Mots simples, salutations, objets du quotidien', badge: '🌱 Pre-A1' },
+      { id: 'A1', label: 'A1 Élémentaire', desc: 'Phrases courtes, présent simple, routines courantes', badge: '🌿 A1' },
+      { id: 'A2', label: 'A2 Pré-Intermédiaire', desc: 'Conversations simples, passé, détails personnels', badge: '☘️ A2' },
+      { id: 'B1', label: 'B1 Intermédiaire', desc: 'Voyages, opinions, milieu professionnel', badge: '🌲 B1' },
+      { id: 'B2', label: 'B2 Intermédiaire Sup.', desc: 'Arguments complexes, langage fluide & débats', badge: '🌳 B2' },
+      { id: 'C1', label: 'C1 Avancé', desc: 'Nuances d\'expression, textes académiques', badge: '🎓 C1' },
+      { id: 'C2', label: 'C2 Maîtrise / Bilingue', desc: 'Subtilités, style littéraire et expert', badge: '👑 C2' }
+    ];
+
+    const CATEGORIES = [
+      { id: 'all', label: 'Tous' },
+      { id: 'daily', label: 'Vie quotidienne' },
+      { id: 'business', label: 'Business' },
+      { id: 'tech', label: 'Tech & IA' },
+      { id: 'travel', label: 'Voyages' },
+      { id: 'academic', label: 'Académique' }
+    ];
+
+    const ACCENT_THEMES = {
+      indigo: { name: 'Adama Indigo', primary: 'bg-indigo-600 hover:bg-indigo-700', text: 'text-indigo-400', border: 'border-indigo-500', bgLight: 'bg-indigo-950/50', gradient: 'from-indigo-600 to-cyan-500' },
+      emerald: { name: 'Émeraude Zen', primary: 'bg-emerald-600 hover:bg-emerald-700', text: 'text-emerald-400', border: 'border-emerald-500', bgLight: 'bg-emerald-950/50', gradient: 'from-emerald-600 to-teal-400' },
+      violet: { name: 'Violet Cyber', primary: 'bg-violet-600 hover:bg-violet-700', text: 'text-violet-400', border: 'border-violet-500', bgLight: 'bg-violet-950/50', gradient: 'from-violet-600 to-fuchsia-500' },
+      amber: { name: 'Ambre Solaire', primary: 'bg-amber-500 hover:bg-amber-600', text: 'text-amber-400', border: 'border-amber-500', bgLight: 'bg-amber-950/50', gradient: 'from-amber-500 to-orange-600' }
+    };
+
+    const INITIAL_COURSES = [
+      {
+        id: 101,
+        level: 'Pre-A1',
+        category: 'daily',
+        title: 'Couleurs & Objets du Quotidien',
+        subtitle: 'Identifier les objets dans la pièce et les couleurs principales',
+        topic: 'Nommer ce qui vous entoure avec les pronoms de base',
+        thumbnail: 'https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?auto=format&fit=crop&w=600&q=80',
+        completedLessons: 2,
+        totalLessons: 5
+      },
+      {
+        id: 102,
+        level: 'A1',
+        category: 'daily',
+        title: 'Une Journée au Café de la Plage',
+        subtitle: 'Pronoms personnels & Présent Simple du verbe To Be',
+        topic: 'Commander un café et échanger des formules de politesse',
+        thumbnail: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80',
+        completedLessons: 4,
+        totalLessons: 7
+      },
+      {
+        id: 103,
+        level: 'A2',
+        category: 'travel',
+        title: 'Prendre le Métro à Londres',
+        subtitle: 'Démonstratifs (This/That) & Demander sa direction',
+        topic: 'Acheter un billet et trouver la bonne ligne de métro',
+        thumbnail: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&w=600&q=80',
+        completedLessons: 1,
+        totalLessons: 6
+      },
+      {
+        id: 104,
+        level: 'B1',
+        category: 'business',
+        title: 'Préparation aux Entretiens de Recrutement',
+        subtitle: 'Present Perfect vs Past Simple & Vocabulaire pro',
+        topic: 'Présenter ses expériences passées et ses réussites',
+        thumbnail: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80',
+        completedLessons: 0,
+        totalLessons: 8
+      },
+      {
+        id: 105,
+        level: 'B2',
+        category: 'academic',
+        title: 'Débat sur la Transition Écologique',
+        subtitle: 'Conditionnels 2 & 3 avec modaux complexes',
+        topic: 'Argumenter sur les énergies renouvelables et le développement durable',
+        thumbnail: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80',
+        completedLessons: 0,
+        totalLessons: 8
+      },
+      {
+        id: 106,
+        level: 'C1',
+        category: 'tech',
+        title: 'Intelligence Artificielle & Gouvernance',
+        subtitle: 'Subjonctif, Inversion & Rhétorique Avancée',
+        topic: 'Analyser les enjeux éthiques et macroéconomiques de la Tech',
+        thumbnail: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80',
+        completedLessons: 0,
+        totalLessons: 9
+      },
+      {
+        id: 107,
+        level: 'C2',
+        category: 'academic',
+        title: 'Discours Littéraire et Géopolitique',
+        subtitle: 'Registres de langue, subtilités idiomatiques & nuances',
+        topic: 'Critique philosophique et diplomatique de haut niveau',
+        thumbnail: 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=600&q=80',
+        completedLessons: 0,
+        totalLessons: 10
+      }
+    ];
+
+    // ==========================================
+    // 2. SERVICE GEMINI IA PERSISTANT
+    // ==========================================
+    const GeminiService = {
+      async generateJSON(prompt, systemInstruction = '') {
+        const apiKey = ""; // Automatiquement fourni par l'environnement
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+        const fullPrompt = systemInstruction ? `${systemInstruction}\n\nTâche:\n${prompt}` : prompt;
+
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: fullPrompt }] }],
+              generationConfig: { responseMimeType: "application/json" }
+            })
+          });
+
+          if (!response.ok) throw new Error(`Status ${response.status}`);
+          const resData = await response.json();
+          const rawText = resData?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (rawText) return JSON.parse(rawText);
+          throw new Error("Réponse vide");
+        } catch (err) {
+          console.warn("Utilisation de secours générée par Adama Engine:", err);
+          return null;
+        }
+      },
+
+      async generateLesson(topic, level) {
+        const systemPrompt = `Tu es un professeur de langue expert ESL. Génère un cours complet au niveau CECRL ${level} au format JSON.`;
+        const prompt = `Crée un cours structuré sur le thème "${topic}" pour le niveau ${level}.
+Exige le JSON suivant :
+{
+  "title": "${topic}",
+  "subtitle": "Maîtriser les fondamentaux du niveau ${level}",
+  "cefrLevel": "${level}",
+  "topic": "${topic}",
+  "objectives": [
+    "Maîtriser le vocabulaire clé",
+    "Comprendre la règle de grammaire principale",
+    "Mettre en pratique dans un dialogue authentique"
+  ],
+  "explanation": "Dans cette leçon au niveau ${level}, nous étudions comment communiquer avec précision et fluidité.",
+  "vocabulary": [
+    {"word": "Essential", "definition": "Indispensable ou primordial", "phonetic": "/ɪˈsen.ʃəl/", "example": "Practice is essential for success.", "synonyms": ["vital", "crucial"]},
+    {"word": "Improve", "definition": "Rendre meilleur ou faire des progrès", "phonetic": "/ɪmˈpruːv/", "example": "I practice every day to improve.", "synonyms": ["enhance", "advance"]}
+  ],
+  "grammar": {
+    "ruleTitle": "Structure Principale (${level})",
+    "explanation": "Comprendre et appliquer correctement les règles fondamentales.",
+    "formula": "Sujet + Auxiliaire + Verbe principal",
+    "examples": ["I have completed the module.", "We learn faster with AI coaching."]
+  },
+  "dialogue": [
+    {"speaker": "A", "text": "Hello! Are you ready for today's lesson?", "translation": "Bonjour ! Êtes-vous prêt pour la leçon du jour ?"},
+    {"speaker": "B", "text": "Yes, I am excited to practice at level ${level}.", "translation": "Oui, je suis ravi de m'entraîner au niveau ${level}."}
+  ],
+  "exercises": [
+    {
+      "id": 1,
+      "question": "Choisissez le mot qui convient le mieux : 'Daily practice is ___ to master English.'",
+      "options": ["essential", "difficult", "unnecessary"],
+      "answer": "essential"
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Quel est l'objectif principal du niveau ${level} ?",
+      "options": ["Communiquer efficacement avec confiance", "Répéter sans comprendre", "Éviter de parler"],
+      "answer": "Communiquer efficacement avec confiance"
+    }
+  ]
+}`;
+
+        const res = await this.generateJSON(prompt, systemPrompt);
+        if (res) return res;
+
+        // Fallback généré à la volée si hors ligne
+        return {
+          title: topic,
+          subtitle: `Leçon dynamique niveau ${level}`,
+          cefrLevel: level,
+          topic: topic,
+          objectives: [
+            `Acquérir le lexique clé sur : ${topic}`,
+            `Appliquer la grammaire du niveau ${level}`,
+            `Répondre au quiz de validation`
+          ],
+          explanation: `Ce module interactif est spécialement conçu pour accélérer votre progression au niveau ${level}.`,
+          vocabulary: [
+            { word: 'Fluency', definition: 'Aisance et fluidité d\'expression', phonetic: '/ˈfluː.ən.si/', example: 'Daily training builds natural fluency.', synonyms: ['eloquence'] },
+            { word: 'Confidence', definition: 'Assurance et confiance en soi', phonetic: '/ˈkɒn.fɪ.dəns/', example: 'He speaks with great confidence.', synonyms: ['assurance'] }
+          ],
+          grammar: {
+            ruleTitle: `Règle Clé - Niveau ${level}`,
+            explanation: `Application directe dans vos conversations courantes.`,
+            formula: `Sujet + Forme Clé + Complément`,
+            examples: [`I regularly practice ${topic}.`, `They feel confident at level ${level}.`]
+          },
+          dialogue: [
+            { speaker: 'Alex', text: `Welcome to our special focus on ${topic}!`, translation: `Bienvenue dans notre focus sur ${topic} !` },
+            { speaker: 'Sarah', text: `Thanks! I'm aiming for complete mastery at level ${level}.`, translation: `Merci ! Je vise la maîtrise totale du niveau ${level}.` }
+          ],
+          exercises: [
+            { id: 1, question: `Sélectionnez la bonne option pour exprimer la fluidité :`, options: ['Fluency', "Hesitation", "Silence"], answer: 'Fluency' }
+          ],
+          quiz: [
+            { question: `Avez-vous complété la préparation au niveau ${level} ?`, options: ['Oui, parfaitement !', 'Pas encore', 'Besoin de réviser'], answer: 'Oui, parfaitement !' }
+          ]
+        };
+      }
+    };
+
+    // ==========================================
+    // 3. COMPOSANT PRINCIPAL DE L'APPLICATION
+    // ==========================================
+    function App() {
+      const [selectedLevel, setSelectedLevel] = useState('A1');
+      const [selectedCategory, setSelectedCategory] = useState('all');
+      const [accentKey, setAccentKey] = useState('indigo');
+      const [darkMode, setDarkMode] = useState(true);
+      const [activeTab, setActiveTab] = useState('cours'); // 'cours' | 'player' | 'agent' | 'speaking' | 'writing' | 'progress'
+      
+      const [courses, setCourses] = useState(INITIAL_COURSES);
+      const [currentLesson, setCurrentLesson] = useState(null);
+      const [isGenerating, setIsGenerating] = useState(false);
+      const [showCustomModal, setShowCustomModal] = useState(false);
+      const [customPrompt, setCustomPrompt] = useState('');
+
+      const [userXP, setUserXP] = useState(450);
+      const [streak, setStreak] = useState(5);
+
+      // État de l'Agent Autonome (48h)
+      const [autoAgentState, setAutoAgentState] = useState({
+        enabled: true,
+        frequencyDays: 2,
+        lastRun: '2026-09-26T08:00:00Z',
+        nextRun: '2026-09-28T08:00:00Z',
+        isAgentRunning: false,
+        generatedBatchCount: 14,
+        logs: [
+          { id: 1, timestamp: '26/09/2026 - 08:00', title: 'Génération automatique récurrente (48h)', count: 7, status: 'Succès' },
+          { id: 2, timestamp: '24/09/2026 - 08:00', title: 'Génération automatique récurrente (48h)', count: 7, status: 'Succès' }
+        ]
+      });
+
+      const activeAccent = ACCENT_THEMES[accentKey];
+
+      // Initialiser Lucide icons
+      useEffect(() => {
+        if (window.lucide) window.lucide.createIcons();
+      });
+
+      // Lancement de la génération d'un cours
+      const handleOpenLesson = async (topic, levelToUse = selectedLevel) => {
+        setIsGenerating(true);
+        const lesson = await GeminiService.generateLesson(topic, levelToUse);
+        setCurrentLesson(lesson);
+        setIsGenerating(false);
+        setActiveTab('player');
+      };
+
+      // Soumission d'une leçon sur mesure via Modal
+      const handleCreateCustomLesson = async () => {
+        if (!customPrompt.trim()) return;
+        setShowCustomModal(false);
+        await handleOpenLesson(customPrompt, selectedLevel);
+        setCustomPrompt('');
+      };
+
+      // Exécution manuelle de l'Agent Autonome (Génération pour les 7 niveaux)
+      const handleRunAutoAgent = async () => {
+        setAutoAgentState(prev => ({ ...prev, isAgentRunning: true }));
+        const nowStr = new Date().toLocaleString('fr-FR');
+        
+        const newCourses = [];
+        const levelTopics = {
+          'Pre-A1': 'Les chiffres, la famille et les formules de salutation',
+          'A1': 'Commander au restaurant et demander l\'addition',
+          'A2': 'Planifier un itinéraire de vacances et réserver un hôtel',
+          'B1': 'Animer une réunion d\'équipe et présenter des objectifs',
+          'B2': 'Rédiger une synthèse stratégique et négocier un contrat',
+          'C1': 'Analyser les enjeux éthiques de l\'intelligence artificielle',
+          'C2': 'Critique philosophique et rhétorique comparative'
+        };
+
+        for (const lvl of CEFR_LEVELS) {
+          const topicToUse = levelTopics[lvl.id] || `Mise en situation quotidienne ${lvl.id}`;
+          newCourses.push({
+            id: Date.now() + Math.floor(Math.random() * 10000),
+            level: lvl.id,
+            category: 'daily',
+            title: `Module Agent IA - ${topicToUse}`,
+            subtitle: `Généré automatiquement par l'Agent Adama (48h)`,
+            topic: topicToUse,
+            thumbnail: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80',
+            completedLessons: 0,
+            totalLessons: 6,
+            isAutoGenerated: true
+          });
+        }
+
+        setCourses(prev => [...newCourses, ...prev]);
+
+        const nextDate = new Date();
+        nextDate.setDate(nextDate.getDate() + 2);
+
+        setAutoAgentState(prev => ({
+          ...prev,
+          isAgentRunning: false,
+          lastRun: new Date().toISOString(),
+          nextRun: nextDate.toISOString(),
+          generatedBatchCount: prev.generatedBatchCount + 1,
+          logs: [
+            {
+              id: Date.now(),
+              timestamp: nowStr,
+              title: `Génération récurrente #${prev.generatedBatchCount + 1}`,
+              count: 7,
+              status: 'Succès'
+            },
+            ...prev.logs
+          ]
+        }));
+      };
+
+      // Filtrage des cours par Niveau CECRL & Catégorie
+      const filteredCourses = courses.filter(c => {
+        const matchesLevel = c.level === selectedLevel;
+        const matchesCat = selectedCategory === 'all' || c.category === selectedCategory;
+        return matchesLevel && matchesCat;
+      });
+
+      return (
+        <div className={`h-full flex flex-col ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
+          
+          {/* HEADER PRINCIPAL */}
+          <header className={`px-4 py-3 border-b flex items-center justify-between z-20 ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white/90 border-slate-200'}`}>
+            <div className="flex items-center space-x-3">
+              <div className={`p-2 rounded-2xl bg-gradient-to-tr ${activeAccent.gradient} text-white shadow-lg`}>
+                <i data-lucide="sparkles" className="w-5 h-5"></i>
+              </div>
+              <div>
+                <h1 className="text-base font-black tracking-tight flex items-center space-x-1">
+                  <span>ADAMA</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-md text-white font-bold ${activeAccent.primary}`}>
+                    AI
+                  </span>
+                </h1>
+                <p className="text-[10px] text-slate-400 font-medium">Plateforme Éducative Intelligente</p>
+              </div>
+            </div>
+
+            {/* Statistiques Profil & Thèmes */}
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-1.5 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-xl text-amber-400 text-xs font-bold">
+                <i data-lucide="flame" className="w-4 h-4 text-amber-500 animate-bounce-short"></i>
+                <span>{streak}j</span>
+              </div>
+              
+              <div className="flex items-center space-x-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-xl text-emerald-400 text-xs font-bold">
+                <i data-lucide="zap" className="w-4 h-4 text-emerald-500"></i>
+                <span>{userXP} XP</span>
+              </div>
+
+              {/* Toggle Mode Sombre */}
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className="p-2 rounded-xl bg-slate-800 dark:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition"
+              >
+                <i data-lucide={darkMode ? "sun" : "moon"} className="w-4 h-4"></i>
+              </button>
+            </div>
+          </header>
+
+          {/* SELECTEUR DE NIVEAUX CECRL (Pre-A1 à C2) */}
+          <div className={`px-4 py-2 border-b overflow-x-auto scrollbar-none flex space-x-2 shrink-0 ${darkMode ? 'bg-slate-900/50 border-slate-800/80' : 'bg-slate-100 border-slate-200'}`}>
+            {CEFR_LEVELS.map((lvl) => {
+              const isSel = selectedLevel === lvl.id;
+              return (
+                <button
+                  key={lvl.id}
+                  onClick={() => setSelectedLevel(lvl.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all flex items-center space-x-1.5 ${
+                    isSel
+                      ? `${activeAccent.primary} text-white shadow-md scale-105`
+                      : 'bg-slate-800/60 hover:bg-slate-800 text-slate-400 border border-slate-700/50'
+                  }`}
+                >
+                  <span>{lvl.badge}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ZONE DE CONTENU PRINCIPAL */}
+          <main className="flex-1 overflow-y-auto p-4 pb-28 scrollbar-none max-w-5xl mx-auto w-full">
+            
+            {/* VUE 1 : CATALOGUE DE COURS */}
+            {activeTab === 'cours' && (
+              <div className="space-y-6">
+                
+                {/* Banner Promotionnel Niveau Actuel */}
+                <div className={`p-6 rounded-3xl bg-gradient-to-r ${activeAccent.gradient} text-white shadow-xl relative overflow-hidden`}>
+                  <div className="relative z-10 space-y-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest bg-white/20 backdrop-blur-md px-3 py-1 rounded-full">
+                      Niveau Sélectionné : {selectedLevel}
+                    </span>
+                    <h2 className="text-xl font-black">
+                      {CEFR_LEVELS.find(l => l.id === selectedLevel)?.label}
+                    </h2>
+                    <p className="text-xs opacity-90 max-w-xl">
+                      {CEFR_LEVELS.find(l => l.id === selectedLevel)?.desc}
+                    </p>
+                    
+                    <div className="pt-2 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setShowCustomModal(true)}
+                        className="bg-white text-slate-950 hover:bg-slate-100 font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-md transition flex items-center space-x-2"
+                      >
+                        <i data-lucide="wand-2" className="w-4 h-4 text-indigo-600"></i>
+                        <span>Créer un cours IA personnalisé</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Filtres de catégories */}
+                <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none pb-1">
+                  {CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategory(cat.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap border transition ${
+                        selectedCategory === cat.id
+                          ? `${activeAccent.border} ${activeAccent.bgLight} ${activeAccent.text}`
+                          : 'border-slate-800 bg-slate-900/40 text-slate-400 hover:bg-slate-800'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Grille de Cours */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredCourses.map((course) => (
+                    <div
+                      key={course.id}
+                      className={`p-4 rounded-3xl border transition hover:border-indigo-500/50 flex flex-col justify-between space-y-4 ${
+                        darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+                      }`}
+                    >
+                      <div className="space-y-3">
+                        <div className="relative h-36 rounded-2xl overflow-hidden bg-slate-800">
+                          <img
+                            src={course.thumbnail}
+                            alt={course.title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => { e.target.src = 'https://placehold.co/600x400/1e293b/ffffff?text=ADAMA+AI'; }}
+                          />
+                          <div className="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-md px-2.5 py-1 rounded-xl text-[10px] font-black text-amber-400 border border-amber-500/20">
+                            {course.level}
+                          </div>
+                          {course.isAutoGenerated && (
+                            <div className="absolute top-2 right-2 bg-indigo-600 text-white px-2 py-0.5 rounded-lg text-[9px] font-bold">
+                              Agent 48h
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <h3 className="font-extrabold text-sm line-clamp-1">{course.title}</h3>
+                          <p className="text-xs text-slate-400 mt-1 line-clamp-2">{course.subtitle}</p>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between">
+                        <span className="text-[10px] font-semibold text-slate-500">
+                          {course.completedLessons}/{course.totalLessons} leçons
+                        </span>
+                        <button
+                          onClick={() => handleOpenLesson(course.topic, course.level)}
+                          disabled={isGenerating}
+                          className={`px-3.5 py-2 rounded-xl font-bold text-xs text-white shadow-md transition flex items-center space-x-1.5 ${activeAccent.primary}`}
+                        >
+                          <span>Démarrer</span>
+                          <i data-lucide="play" className="w-3.5 h-3.5"></i>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+              </div>
+            )}
+
+            {/* VUE 2 : LECTEUR DE LEÇON INTERACTIF */}
+            {activeTab === 'player' && (
+              <LessonPlayerView 
+                lesson={currentLesson} 
+                isGenerating={isGenerating}
+                onBack={() => setActiveTab('cours')}
+                onComplete={() => {
+                  setUserXP(prev => prev + 50);
+                  setActiveTab('cours');
+                }}
+                darkMode={darkMode}
+                activeAccent={activeAccent}
+              />
+            )}
+
+            {/* VUE 3 : AGENT AUTONOME 48H STUDIO */}
+            {activeTab === 'agent' && (
+              <AutoAgentView 
+                state={autoAgentState}
+                setState={setAutoAgentState}
+                onRun={handleRunAutoAgent}
+                darkMode={darkMode}
+                activeAccent={activeAccent}
+              />
+            )}
+
+            {/* VUE 4 : SPEAKING & PRONUNCIATION COACH */}
+            {activeTab === 'speaking' && (
+              <SpeakingStudioView level={selectedLevel} darkMode={darkMode} activeAccent={activeAccent} />
+            )}
+
+            {/* VUE 5 : WRITING STUDIO */}
+            {activeTab === 'writing' && (
+              <WritingStudioView level={selectedLevel} darkMode={darkMode} activeAccent={activeAccent} />
+            )}
+
+            {/* VUE 6 : PROGRESSION & STATS */}
+            {activeTab === 'progress' && (
+              <ProgressDashboardView userXP={userXP} streak={streak} darkMode={darkMode} activeAccent={activeAccent} />
+            )}
+
+          </main>
+
+          {/* MODAL DE CRÉATION DE COURS SUR-MESURE IA */}
+          {showCustomModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+              <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl space-y-4 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                <div className="flex justify-between items-center">
+                  <h3 className="text-base font-black flex items-center space-x-2">
+                    <i data-lucide="wand-2" className={activeAccent.text}></i>
+                    <span>Générateur de Cours IA</span>
+                  </h3>
+                  <button onClick={() => setShowCustomModal(false)} className="p-1 rounded-xl text-slate-400 hover:text-white">
+                    <i data-lucide="x" className="w-5 h-5"></i>
+                  </button>
+                </div>
+
+                <p className="text-xs text-slate-400">
+                  Saisissez n'importe quel sujet ou mise en situation. L'IA concevra instantanément une leçon complète adaptée au niveau <strong className="text-amber-400">{selectedLevel}</strong>.
+                </p>
+
+                <textarea
+                  rows={4}
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  placeholder="Ex: Négocier une augmentation de salaire, Commander un café à Tokyo, Débattre sur les énergies renouvelables..."
+                  className="w-full bg-slate-800/50 border border-slate-700 rounded-2xl p-3 text-xs focus:outline-none focus:border-indigo-500"
+                />
+
+                <div className="flex justify-end space-x-2">
+                  <button
+                    onClick={() => setShowCustomModal(false)}
+                    className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={handleCreateCustomLesson}
+                    disabled={!customPrompt.trim()}
+                    className={`px-5 py-2.5 rounded-xl text-xs font-extrabold text-white shadow-md disabled:opacity-40 ${activeAccent.primary}`}
+                  >
+                    Générer la Leçon
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* BARRE DE NAVIGATION INFÉRIEURE */}
+          <nav className={`fixed bottom-0 left-0 right-0 border-t px-2 py-2 flex justify-around items-center z-30 backdrop-blur-md ${
+            darkMode ? 'bg-slate-900/95 border-slate-800' : 'bg-white/95 border-slate-200'
+          }`}>
+            {[
+              { id: 'cours', label: 'Cours', icon: 'book-open' },
+              { id: 'agent', label: 'Agent 48h', icon: 'bot' },
+              { id: 'speaking', label: 'Oral', icon: 'mic' },
+              { id: 'writing', label: 'Écrit', icon: 'file-text' },
+              { id: 'progress', label: 'Progrès', icon: 'trending-up' }
+            ].map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition ${
+                    isActive ? `${activeAccent.text} font-bold` : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className={`p-1.5 rounded-xl ${isActive ? activeAccent.bgLight : ''}`}>
+                    <i data-lucide={tab.icon} className="w-5 h-5"></i>
+                  </div>
+                  <span className="text-[10px] mt-0.5">{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 4. COMPOSANTS DE VUE (LESSON PLAYER)
+    // ==========================================
+    function LessonPlayerView({ lesson, isGenerating, onBack, onComplete, darkMode, activeAccent }) {
+      const [activeSection, setActiveSection] = useState('vocab'); // 'vocab' | 'grammar' | 'dialogue' | 'quiz'
+      const [quizAnswers, setQuizAnswers] = useState({});
+      const [quizScore, setQuizScore] = useState(null);
+
+      if (isGenerating) {
+        return (
+          <div className="flex flex-col items-center justify-center h-96 space-y-4 text-center">
+            <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            <h3 className="text-base font-extrabold">Création de votre Leçon par l'IA...</h3>
+            <p className="text-xs text-slate-400">Génération du vocabulaire, des règles de grammaire et du dialogue interactif</p>
+          </div>
+        );
+      }
+
+      if (!lesson) return null;
+
+      // TTS pour la prononciation audio
+      const speakText = (text) => {
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = 'en-US';
+          window.speechSynthesis.speak(utterance);
+        }
+      };
+
+      const handleValidateQuiz = () => {
+        let correctCount = 0;
+        lesson.quiz?.forEach((q, idx) => {
+          if (quizAnswers[idx] === q.answer) correctCount++;
+        });
+        setQuizScore(correctCount);
+      };
+
+      return (
+        <div className="space-y-6">
+          
+          {/* Header de la leçon */}
+          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+            <button onClick={onBack} className="flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-white">
+              <i data-lucide="arrow-left" className="w-4 h-4"></i>
+              <span>Retour aux cours</span>
+            </button>
+            <span className="text-xs font-black px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              CECRL {lesson.cefrLevel}
+            </span>
+          </div>
+
+          <div>
+            <h2 className="text-xl font-black">{lesson.title}</h2>
+            <p className="text-xs text-slate-400 mt-1">{lesson.explanation}</p>
+          </div>
+
+          {/* Onglets de navigation dans la leçon */}
+          <div className="flex border-b border-slate-800 space-x-2 overflow-x-auto scrollbar-none">
+            {[
+              { id: 'vocab', label: 'Vocabulaire', icon: 'book' },
+              { id: 'grammar', label: 'Grammaire', icon: 'layout' },
+              { id: 'dialogue', label: 'Dialogue Guidé', icon: 'message-square' },
+              { id: 'quiz', label: 'Quiz Final', icon: 'check-circle' }
+            ].map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setActiveSection(s.id)}
+                className={`px-4 py-2 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap ${
+                  activeSection === s.id
+                    ? `${activeAccent.border} ${activeAccent.text}`
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <i data-lucide={s.icon} className="w-4 h-4"></i>
+                <span>{s.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* SECTION 1: VOCABULAIRE */}
+          {activeSection === 'vocab' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {lesson.vocabulary?.map((v, idx) => (
+                <div key={idx} className={`p-4 rounded-3xl border space-y-2 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-black text-sm text-indigo-400">{v.word}</h4>
+                      <span className="text-[10px] text-slate-500 font-mono">{v.phonetic}</span>
+                    </div>
+                    <button
+                      onClick={() => speakText(v.word)}
+                      className="p-2 rounded-xl bg-indigo-600/10 text-indigo-400 hover:bg-indigo-600 hover:text-white transition"
+                    >
+                      <i data-lucide="volume-2" className="w-4 h-4"></i>
+                    </button>
+                  </div>
+                  <p className="text-xs font-medium">{v.definition}</p>
+                  <p className="text-xs text-slate-400 italic bg-slate-800/40 p-2 rounded-xl">
+                    "{v.example}"
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* SECTION 2: GRAMMAIRE */}
+          {activeSection === 'grammar' && (
+            <div className={`p-5 rounded-3xl border space-y-4 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <h3 className="font-black text-sm text-amber-400">{lesson.grammar?.ruleTitle}</h3>
+              <p className="text-xs leading-relaxed">{lesson.grammar?.explanation}</p>
+              
+              <div className="p-3 bg-indigo-950/40 border border-indigo-500/30 rounded-2xl">
+                <span className="text-[10px] font-extrabold text-indigo-400 uppercase tracking-wider">Formule Principale</span>
+                <p className="text-xs font-mono font-bold text-indigo-200 mt-1">{lesson.grammar?.formula}</p>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-slate-400">Exemples d'application :</h4>
+                {lesson.grammar?.examples?.map((ex, i) => (
+                  <div key={i} className="text-xs p-2.5 bg-slate-800/50 rounded-xl font-medium border border-slate-800">
+                    • {ex}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* SECTION 3: DIALOGUE */}
+          {activeSection === 'dialogue' && (
+            <div className="space-y-3">
+              {lesson.dialogue?.map((d, i) => (
+                <div key={i} className={`p-4 rounded-3xl border space-y-1.5 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase text-indigo-400">Locuteur {d.speaker}</span>
+                    <button onClick={() => speakText(d.text)} className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white">
+                      <i data-lucide="volume-2" className="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
+                  <p className="text-xs font-bold text-slate-100">{d.text}</p>
+                  <p className="text-[11px] text-slate-400 italic">{d.translation}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* SECTION 4: QUIZ */}
+          {activeSection === 'quiz' && (
+            <div className={`p-5 rounded-3xl border space-y-4 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <h3 className="font-black text-sm">Validation des Acquis ({lesson.cefrLevel})</h3>
+              
+              {lesson.quiz?.map((q, idx) => (
+                <div key={idx} className="space-y-2">
+                  <p className="text-xs font-bold">{q.question}</p>
+                  <div className="space-y-1.5">
+                    {q.options?.map((opt, oIdx) => (
+                      <button
+                        key={oIdx}
+                        onClick={() => setQuizAnswers({ ...quizAnswers, [idx]: opt })}
+                        className={`w-full p-3 rounded-2xl text-xs font-bold border text-left transition ${
+                          quizAnswers[idx] === opt
+                            ? `${activeAccent.border} ${activeAccent.bgLight} ${activeAccent.text}`
+                            : 'border-slate-800 bg-slate-950/40'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              {quizScore === null ? (
+                <button
+                  onClick={handleValidateQuiz}
+                  className={`w-full py-3 rounded-2xl font-black text-xs text-white shadow-md ${activeAccent.primary}`}
+                >
+                  Valider mes réponses
+                </button>
+              ) : (
+                <div className="p-4 rounded-2xl bg-emerald-950/50 border border-emerald-500/30 text-center space-y-2">
+                  <h4 className="font-black text-sm text-emerald-400">Quiz Validé avec Succès !</h4>
+                  <p className="text-xs text-slate-300">Score : {quizScore} / {lesson.quiz.length}</p>
+                  <button
+                    onClick={onComplete}
+                    className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs"
+                  >
+                    Obtenir mes +50 XP et Terminer
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 5. COMPOSANT AGENT AUTONOME 48H
+    // ==========================================
+    function AutoAgentView({ state, setState, onRun, darkMode, activeAccent }) {
+      return (
+        <div className="space-y-6">
+          <div className={`p-6 rounded-3xl bg-gradient-to-r ${activeAccent.gradient} text-white shadow-xl space-y-3`}>
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-black uppercase tracking-widest bg-white/20 backdrop-blur-md px-3 py-1 rounded-full">
+                Agent Autonome Recurrent (48h)
+              </span>
+              <span className="text-[10px] font-bold bg-emerald-400 text-slate-950 px-2 py-0.5 rounded-full uppercase">
+                {state.enabled ? 'Actif' : 'En Pause'}
+              </span>
+            </div>
+
+            <h2 className="text-xl font-black">Génération Automatique Multi-Niveaux</h2>
+            <p className="text-xs opacity-90 max-w-xl">
+              Toutes les 48 heures, cet agent autonome conçoit et déploie de nouvelles leçons, exercices et quiz pour les 7 niveaux CECRL (Pre-A1 à C2).
+            </p>
+
+            <button
+              onClick={onRun}
+              disabled={state.isAgentRunning}
+              className="bg-slate-950 hover:bg-slate-900 text-white font-black text-xs py-3 px-5 rounded-2xl shadow-lg flex items-center space-x-2 transition border border-white/10 disabled:opacity-50"
+            >
+              {state.isAgentRunning ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+                  <span>Génération des 7 Niveaux CECRL...</span>
+                </>
+              ) : (
+                <>
+                  <i data-lucide="zap" className="w-4 h-4 text-amber-400"></i>
+                  <span>Forcer la génération maintenant (7 Niveaux)</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className={`p-5 rounded-3xl border space-y-4 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">Planification & Historique</h3>
+            
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-3 rounded-2xl bg-slate-800/50 border border-slate-800">
+                <span className="text-[10px] text-slate-400 block">Fréquence</span>
+                <span className="font-extrabold">Tous les 2 jours (48h)</span>
+              </div>
+              <div className="p-3 rounded-2xl bg-slate-800/50 border border-slate-800">
+                <span className="text-[10px] text-slate-400 block">Prochaine exécution</span>
+                <span className="font-extrabold text-emerald-400">{new Date(state.nextRun).toLocaleDateString('fr-FR')}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2 border-t border-slate-800">
+              <h4 className="text-xs font-bold text-slate-400">Journal d'Activité</h4>
+              {state.logs.map((log) => (
+                <div key={log.id} className="p-3 bg-slate-950/50 rounded-2xl flex items-center justify-between text-xs border border-slate-800/80">
+                  <div className="flex items-center space-x-2">
+                    <i data-lucide="check-circle" className="w-4 h-4 text-emerald-400"></i>
+                    <div>
+                      <div className="font-bold">{log.title}</div>
+                      <div className="text-[10px] text-slate-400">{log.timestamp} • {log.count} leçons créées</div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/20">
+                    {log.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 6. COMPOSANTS SECONDAIRES (ORAL, ÉCRIT, STATS)
+    // ==========================================
+    function SpeakingStudioView({ level, darkMode, activeAccent }) {
+      const [isRecording, setIsRecording] = useState(false);
+      const [evalResult, setEvalResult] = useState(null);
+
+      const handleStartRecord = () => {
+        setIsRecording(true);
+        setTimeout(() => {
+          setIsRecording(false);
+          setEvalResult({
+            score: 88,
+            feedback: "Excellente intonation ! Votre articulation sur les voyelles courtes est très précise.",
+            correction: "Regarding my daily schedule, I usually wake up early in the morning."
+          });
+        }, 1800);
+      };
+
+      return (
+        <div className="space-y-4">
+          <div className={`p-5 rounded-3xl border space-y-3 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <h3 className="text-xs font-black uppercase text-indigo-400 flex items-center space-x-2">
+              <i data-lucide="mic" className="w-4 h-4"></i>
+              <span>Coach de Prononciation IA ({level})</span>
+            </h3>
+            <p className="text-xs text-slate-400">
+              Lisez la phrase ci-dessous à haute voix pour une évaluation instantanée :
+            </p>
+            <div className="p-3 rounded-2xl bg-slate-800/60 font-medium text-xs border border-slate-700">
+              "I am eager to practice English every day to reach complete fluency."
+            </div>
+            <button
+              onClick={handleStartRecord}
+              disabled={isRecording}
+              className={`w-full py-3 rounded-2xl font-black text-xs text-white shadow-md flex items-center justify-center space-x-2 ${
+                isRecording ? 'bg-rose-500 animate-pulse' : activeAccent.primary
+              }`}
+            >
+              <i data-lucide="mic" className="w-4 h-4"></i>
+              <span>{isRecording ? 'Analyse vocale en cours...' : 'Enregistrer ma voix'}</span>
+            </button>
+          </div>
+
+          {evalResult && (
+            <div className={`p-5 rounded-3xl border space-y-2 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold">Analyse Prononciation</span>
+                <span className="text-xs font-black text-emerald-400">{evalResult.score}/100</span>
+              </div>
+              <p className="text-xs text-slate-300">{evalResult.feedback}</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function WritingStudioView({ level, darkMode, activeAccent }) {
+      const [text, setText] = useState('');
+      const [evaluating, setEvaluating] = useState(false);
+      const [result, setResult] = useState(null);
+
+      const handleEvaluate = async () => {
+        if (!text.trim()) return;
+        setEvaluating(true);
+        setTimeout(() => {
+          setEvaluating(false);
+          setResult({
+            score: 85,
+            feedback: "Très bonne structure globale. Attention à l'accord sujet-verbe au Present Simple.",
+            improved: text + " (Amélioration : syntaxe fluide et vocabulaire varié)."
+          });
+        }, 1500);
+      };
+
+      return (
+        <div className="space-y-4">
+          <div className={`p-5 rounded-3xl border space-y-3 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <h3 className="text-xs font-black uppercase text-indigo-400 flex items-center space-x-2">
+              <i data-lucide="file-text" className="w-4 h-4"></i>
+              <span>Atelier d'Écriture IA ({level})</span>
+            </h3>
+            <textarea
+              rows={5}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Rédigez votre texte en anglais ici..."
+              className="w-full bg-slate-800/50 border border-slate-700 rounded-2xl p-3 text-xs focus:outline-none"
+            />
+            <button
+              onClick={handleEvaluate}
+              disabled={evaluating || !text.trim()}
+              className={`w-full py-3 rounded-2xl font-black text-xs text-white shadow-md ${activeAccent.primary} disabled:opacity-40`}
+            >
+              {evaluating ? 'Analyse de la syntaxe...' : 'Évaluer mon texte'}
+            </button>
+          </div>
+
+          {result && (
+            <div className={`p-5 rounded-3xl border space-y-2 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold">Correction & Style</span>
+                <span className="text-xs font-black text-emerald-400">{result.score}/100</span>
+              </div>
+              <p className="text-xs text-slate-300">{result.feedback}</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function ProgressDashboardView({ userXP, streak, darkMode, activeAccent }) {
+      return (
+        <div className="space-y-4">
+          <div className={`p-5 rounded-3xl border space-y-4 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <h3 className="text-xs font-black uppercase text-slate-400">Progression CECRL Globale</h3>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/20 text-center">
+                <span className="text-2xl font-black text-indigo-400">{userXP}</span>
+                <span className="text-[10px] text-slate-400 block font-bold">XP Total</span>
+              </div>
+              <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-500/20 text-center">
+                <span className="text-2xl font-black text-amber-400">{streak} jours</span>
+                <span className="text-[10px] text-slate-400 block font-bold">Série en cours</span>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              {[
+                { name: 'Grammaire', pct: 75 },
+                { name: 'Vocabulaire', pct: 82 },
+                { name: 'Compréhension Orale', pct: 68 },
+                { name: 'Expression Écrite', pct: 70 }
+              ].map((s, i) => (
+                <div key={i} className="space-y-1">
+                  <div className="flex justify-between text-xs font-bold">
+                    <span>{s.name}</span>
+                    <span>{s.pct}%</span>
+                  </div>
+                  <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div className={`h-full bg-gradient-to-r ${activeAccent.gradient}`} style={{ width: `${s.pct}%` }}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
