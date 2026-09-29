@@ -1,0 +1,1882 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FacturePRO - Générateur & Gestionnaire de Factures</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- html2canvas for Image Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- html2pdf.js for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- Google Fonts: Inter & Liberation Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Liberation+Sans:wght@400;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#0284c7',
+              600: '#0284c7',
+              700: '#0369a1',
+              800: '#075985',
+              900: '#0c4a6e',
+            },
+            wave: '#1dc4e9',
+            om: '#ff6600',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            doc: ['"Liberation Sans"', 'Arial', 'Helvetica', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+    /* Standard A4 Paper Styling */
+    .a4-paper {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 12mm 15mm;
+      margin: 0 auto;
+      background: #ffffff;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      box-sizing: border-box;
+      color: #000000;
+      font-family: 'Liberation Sans', Arial, Helvetica, sans-serif;
+      position: relative;
+    }
+
+    /* Administrative Invoice Table Rules */
+    .doc-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    .doc-table th {
+      border: 2px solid #000000;
+      padding: 8px 4px;
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      text-align: center;
+      background-color: #ffffff;
+      color: #000000;
+    }
+    .doc-table td {
+      border-left: 2px solid #000000;
+      border-right: 2px solid #000000;
+      border-top: 1px solid #d1d5db;
+      border-bottom: 1px solid #d1d5db;
+      padding: 6px 8px;
+      font-size: 12px;
+      color: #000000;
+      vertical-align: middle;
+      height: 30px;
+    }
+    .doc-table tr:last-child td {
+      border-bottom: 2px solid #000000;
+    }
+
+    /* Print Overrides */
+    @media print {
+      body * { visibility: hidden !important; }
+      #printable-wrapper, #printable-wrapper * { visibility: visible !important; }
+      #printable-wrapper {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+      }
+      .a4-paper {
+        width: 210mm !important;
+        height: 297mm !important;
+        margin: 0 !important;
+        padding: 12mm 15mm !important;
+        box-shadow: none !important;
+        page-break-after: always;
+      }
+      .no-print { display: none !important; }
+      @page { size: A4 portrait; margin: 0; }
+    }
+  </style>
+</head>
+
+<body class="h-full font-sans antialiased text-slate-800 bg-slate-100 flex flex-col">
+
+  <header class="no-print bg-slate-900 text-white sticky top-0 z-40 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <!-- Logo / Brand -->
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="navigateTo('landing')">
+        <div class="w-10 h-10 bg-brand-600 text-white rounded-xl flex items-center justify-center font-black text-xl shadow">
+          <i class="fa-solid fa-file-invoice-dollar"></i>
+        </div>
+        <div>
+          <span class="font-black text-lg tracking-tight block leading-none">Facture<span class="text-brand-500">PRO</span></span>
+          <span class="text-[10px] text-slate-400 font-medium tracking-wide uppercase">Créateur & Gestionnaire Officiel</span>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="hidden md:flex items-center space-x-1" id="nav-links">
+        <button onclick="navigateTo('landing')" class="nav-btn text-slate-300 hover:text-white hover:bg-slate-800 px-3 py-2 rounded-lg text-sm font-medium transition" data-view="landing">
+          <i class="fa-solid fa-house mr-1.5"></i>Accueil
+        </button>
+        <button id="nav-generator" onclick="navigateTo('generator')" class="nav-btn text-slate-300 hover:text-white hover:bg-slate-800 px-3 py-2 rounded-lg text-sm font-medium transition hidden" data-view="generator">
+          <i class="fa-solid fa-plus-circle mr-1.5"></i>Créer Une Facture
+        </button>
+        <button id="nav-history" onclick="navigateTo('history')" class="nav-btn text-slate-300 hover:text-white hover:bg-slate-800 px-3 py-2 rounded-lg text-sm font-medium transition hidden" data-view="history">
+          <i class="fa-solid fa-folder-closed mr-1.5"></i>Mes Factures
+        </button>
+        <button id="nav-setup" onclick="navigateTo('setup')" class="nav-btn text-slate-300 hover:text-white hover:bg-slate-800 px-3 py-2 rounded-lg text-sm font-medium transition hidden" data-view="setup">
+          <i class="fa-solid fa-building mr-1.5"></i>Mon Entreprise
+        </button>
+        <button id="nav-admin" onclick="navigateTo('admin')" class="nav-btn text-amber-300 hover:text-amber-200 bg-amber-950/50 hover:bg-amber-900/60 border border-amber-600/50 px-3 py-2 rounded-lg text-sm font-extrabold transition hidden" data-view="admin">
+          <i class="fa-solid fa-user-shield mr-1.5"></i>ADMINISTRATION
+        </button>
+      </nav>
+
+      <!-- User Auth Badge & Main Action Button -->
+      <div class="flex items-center space-x-3">
+        <div id="user-profile-badge" class="hidden items-center space-x-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full cursor-pointer" onclick="toggleUserDropdown()">
+          <img id="user-avatar" src="https://placehold.co/100x100/0284c7/ffffff?text=U" class="w-6 h-6 rounded-full object-cover" alt="User">
+          <span id="user-name" class="text-xs font-semibold text-slate-200 truncate max-w-[120px]">Utilisateur</span>
+          <span id="user-role-tag" class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">USER</span>
+          <button onclick="logoutUser(event)" title="Déconnexion" class="text-slate-400 hover:text-red-400 text-xs ml-1">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+
+        <button id="btn-main-action" onclick="handleMainActionClick()" class="bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-xs sm:text-sm px-4 py-2 rounded-xl shadow transition flex items-center">
+          <i class="fa-solid fa-cart-shopping mr-2"></i> ACHETER MA FACTURE
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: LANDING PAGE                       -->
+    <!-- ========================================== -->
+    <section id="view-landing" class="view-panel space-y-10">
+      <!-- Hero Header -->
+      <div class="bg-white rounded-3xl p-8 sm:p-12 shadow-sm border border-slate-200 text-center relative overflow-hidden">
+        <div class="absolute -right-12 -top-12 w-64 h-64 bg-brand-50 rounded-full blur-3xl pointer-events-none"></div>
+        
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-brand-50 text-brand-700 border border-brand-100 mb-6">
+          <i class="fa-solid fa-shield-check"></i> Modèle conforme aux normes commerciales & administratives
+        </span>
+        
+        <h1 class="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight max-w-3xl mx-auto leading-tight">
+          CRÉEZ VOS FACTURES PERSONNALISÉES EN TOUTE SIMPLICITÉ
+        </h1>
+        
+        <p class="mt-4 text-slate-600 max-w-2xl mx-auto font-normal text-base sm:text-lg">
+          Un système complet pour votre entreprise. Configurez vos coordonnées et créez vos factures conformes avec export Image, PDF & WhatsApp.
+        </p>
+
+        <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <button id="hero-cta-btn" onclick="handleMainActionClick()" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white font-black text-lg px-8 py-4 rounded-2xl shadow-xl hover:shadow-2xl transition duration-200 transform hover:-translate-y-0.5 flex items-center justify-center">
+            <i class="fa-solid fa-cart-shopping mr-3 text-xl"></i> ACHETER MA FACTURE
+          </button>
+          <button onclick="scrollToPreview()" class="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-base px-6 py-4 rounded-2xl transition flex items-center justify-center">
+            <i class="fa-solid fa-eye mr-2"></i> Voir le modèle
+          </button>
+        </div>
+
+        <div id="hero-admin-shortcut" class="mt-5 hidden">
+          <button onclick="navigateTo('admin')" class="inline-flex items-center px-4 py-2 bg-amber-50 border border-amber-300 text-amber-900 rounded-xl text-xs font-bold hover:bg-amber-100 transition">
+            <i class="fa-solid fa-user-shield text-amber-600 mr-2"></i> Vous êtes connecté en ADMIN - Cliquez ici pour accéder au Tableau de Bord
+          </button>
+        </div>
+
+        <p class="mt-4 text-xs text-slate-500 font-medium">
+          <i class="fa-solid fa-bolt text-amber-500 mr-1"></i> Connexion Google & Activation instantanée. Espace Administrateur intégré.
+        </p>
+      </div>
+
+      <!-- Feature Grid -->
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="w-12 h-12 bg-blue-50 text-brand-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4">
+            <i class="fa-solid fa-building"></i>
+          </div>
+          <h3 class="text-base font-bold text-slate-900">Saisie Unique Entreprise</h3>
+          <p class="text-xs text-slate-600 mt-2 leading-relaxed">Entrez vos coordonnées et logo une fois pour toutes. Vos factures se génèrent automatiquement avec votre en-tête.</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4">
+            <i class="fa-solid fa-calculator"></i>
+          </div>
+          <h3 class="text-base font-bold text-slate-900">Calculs Automatisés</h3>
+          <p class="text-xs text-slate-600 mt-2 leading-relaxed">Prix total par ligne (Quantité × Prix Unitaire) et Somme Totale calculés instantanément sans calcul manuel.</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4">
+            <i class="fa-brands fa-whatsapp"></i>
+          </div>
+          <h3 class="text-base font-bold text-slate-900">Image, PDF & WhatsApp</h3>
+          <p class="text-xs text-slate-600 mt-2 leading-relaxed">Téléchargez vos factures sous forme d'image PNG haute fidélité pour un partage direct sur WhatsApp.</p>
+        </div>
+      </div>
+
+      <!-- Reference Visual Showcase -->
+      <div id="landing-preview-section" class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm">
+        <div class="text-center mb-8">
+          <h2 class="text-2xl font-black text-slate-900">Aperçu Du Modèle Facture Conforme</h2>
+          <p class="text-xs text-slate-500 mt-1">Structure administrative rigoureuse A4 Portrait</p>
+        </div>
+
+        <div class="overflow-x-auto pb-4 flex justify-center bg-slate-200/70 p-4 sm:p-8 rounded-2xl border border-slate-300">
+          <div class="a4-paper transform scale-90 sm:scale-100 origin-top">
+            <div class="flex justify-between items-start">
+              <div class="w-3/5 space-y-1">
+                <div class="font-extrabold text-xl tracking-wide uppercase text-black">SOCIÉTÉ COMMERCIALE QUINCAILLERIE</div>
+                <div class="text-xs font-semibold text-slate-800">Vente de Matériaux de Construction - Outillage - Peinture</div>
+                <div class="text-xs text-slate-800 mt-2 font-medium">
+                  Avenue Lamine Gueye, Dakar - B.P. 12000 - R.C.C.M : SN.DKR.2026.B.1234
+                  Tél. : 33 821 00 00 / 77 123 45 67
+                </div>
+              </div>
+
+              <div class="w-2/5 flex flex-col items-end">
+                <div class="text-xs font-bold text-slate-900 mb-2">
+                  Date : <span class="border-b border-dotted border-black px-4">28/09/2026</span>
+                </div>
+                <div class="border-2 border-black p-3 text-center w-48 bg-white">
+                  <div class="font-black text-xl tracking-widest uppercase">
+                    FACTURE
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-6 border-2 border-black p-2.5 flex justify-between items-center text-xs font-bold bg-white">
+              <div class="space-y-1">
+                <div>CLIENT : <span class="font-extrabold underline">ENTREPRISE BTP GENERAL DAKAR</span></div>
+                <div>NUMÉRO DU CLIENT : <span class="font-semibold">77 987 65 43</span></div>
+              </div>
+              <div class="text-right">
+                Date : <span>28/09/2026</span>
+              </div>
+            </div>
+
+            <table class="doc-table mt-4">
+              <thead>
+                <tr>
+                  <th style="width: 15%;">QUANTITÉ</th>
+                  <th style="width: 45%;">PRODUITS</th>
+                  <th style="width: 20%;">PRIX UNITAIRE</th>
+                  <th style="width: 20%;">PRIX TOTAL</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td class="text-center font-bold">10</td><td>Ciment SOCOCIM 50kg</td><td class="text-right font-medium">4 500 FCFA</td><td class="text-right font-bold">45 000 FCFA</td></tr>
+                <tr><td class="text-center font-bold">5</td><td>Fer à béton 12mm</td><td class="text-right font-medium">6 500 FCFA</td><td class="text-right font-bold">32 500 FCFA</td></tr>
+                <tr><td class="text-center font-bold">2</td><td>Peinture Blanche 20L</td><td class="text-right font-medium">15 000 FCFA</td><td class="text-right font-bold">30 000 FCFA</td></tr>
+                <tr><td></td><td></td><td></td><td></td></tr>
+                <tr><td></td><td></td><td></td><td></td></tr>
+                <tr><td></td><td></td><td></td><td></td></tr>
+              </tbody>
+            </table>
+
+            <div class="mt-4 flex justify-end">
+              <div class="border-2 border-black px-6 py-2 text-sm font-black bg-white flex items-center space-x-4">
+                <span>SOMME TOTALE À PAYER :</span>
+                <span class="text-base">107 500 FCFA</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- MODAL: GOOGLE AUTH & PAYMENT               -->
+    <!-- ========================================== -->
+    <div id="modal-auth-pay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-100 overflow-hidden transform transition-all">
+        <!-- Header -->
+        <div class="bg-slate-900 text-white p-6 flex justify-between items-center">
+          <div>
+            <h3 class="text-xl font-black" id="modal-auth-title">Connexion & Accès</h3>
+            <p class="text-xs text-slate-400 mt-0.5" id="modal-auth-subtitle">Accédez à votre espace générateur de factures</p>
+          </div>
+          <button onclick="closeAuthPayModal()" class="text-slate-400 hover:text-white text-xl">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Step 1: User / Admin Login -->
+        <div id="auth-step-container" class="p-6 space-y-6">
+          <div class="text-center space-y-2">
+            <span class="text-xs font-bold uppercase text-brand-600 bg-brand-50 px-3 py-1 rounded-full border border-brand-200">Étape 1 sur 2</span>
+            <h4 class="text-lg font-extrabold text-slate-900">Identifiez-vous</h4>
+            <p class="text-xs text-slate-500">Connectez-vous pour accéder à vos données d'entreprise et factures.</p>
+          </div>
+
+          <button onclick="simulateGoogleLogin()" class="w-full bg-white hover:bg-slate-50 text-slate-700 font-bold text-sm py-3.5 px-4 rounded-2xl border border-slate-300 shadow-sm transition flex items-center justify-center space-x-3">
+            <svg class="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            <span>Continuer avec Google</span>
+          </button>
+
+          <div class="relative flex py-1 items-center">
+            <div class="flex-grow border-t border-slate-200"></div>
+            <span class="flex-shrink mx-3 text-slate-400 text-[11px] uppercase font-bold">Ou par e-mail</span>
+            <div class="flex-grow border-t border-slate-200"></div>
+          </div>
+
+          <div class="space-y-3">
+            <input type="email" id="input-auth-email" placeholder="votre.email@domaine.com" class="w-full p-3 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            <button onclick="loginWithEmail()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-3 rounded-xl transition">
+              Se Connecter / Créer un compte
+            </button>
+          </div>
+
+          <!-- Direct Admin Login Shortcut -->
+          <div class="pt-3 border-t border-slate-100 text-center">
+            <button onclick="loginAsAdminDirectly()" class="text-xs font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-4 py-2 rounded-xl transition inline-flex items-center">
+              <i class="fa-solid fa-user-shield mr-1.5"></i> Connexion Administrateur Propriétaire (Gratuit)
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: Payment Section (Normal Users Only) -->
+        <div id="payment-step-container" class="p-6 space-y-6 hidden">
+          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex justify-between items-center">
+            <div>
+              <span class="block text-xs font-semibold text-slate-500">Licence FacturePRO à vie :</span>
+              <span class="text-2xl font-black text-slate-900" id="payment-amount-display">5 000 FCFA</span>
+            </div>
+            <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full">Licence Illimitée</span>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-3">Moyen de Paiement :</label>
+            <div class="grid grid-cols-2 gap-3">
+              <!-- Wave -->
+              <label class="relative border-2 border-slate-200 rounded-2xl p-3 flex flex-col items-center justify-center cursor-pointer hover:border-wave hover:bg-cyan-50/50 transition">
+                <input type="radio" name="pay_method" value="wave" class="peer sr-only" checked>
+                <div class="w-8 h-8 bg-wave text-white rounded-full flex items-center justify-center font-bold text-sm mb-1">
+                  <i class="fa-solid fa-water"></i>
+                </div>
+                <span class="font-bold text-xs text-slate-800">Wave</span>
+                <div class="absolute inset-0 border-2 border-wave rounded-2xl hidden peer-checked:block pointer-events-none"></div>
+              </label>
+
+              <!-- Orange Money -->
+              <label class="relative border-2 border-slate-200 rounded-2xl p-3 flex flex-col items-center justify-center cursor-pointer hover:border-om hover:bg-orange-50/50 transition">
+                <input type="radio" name="pay_method" value="om" class="peer sr-only">
+                <div class="w-8 h-8 bg-om text-white rounded-full flex items-center justify-center font-bold text-sm mb-1">
+                  <i class="fa-solid fa-mobile-screen"></i>
+                </div>
+                <span class="font-bold text-xs text-slate-800">Orange Money</span>
+                <div class="absolute inset-0 border-2 border-om rounded-2xl hidden peer-checked:block pointer-events-none"></div>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Numéro de téléphone mobile :</label>
+            <input type="tel" id="pay-phone-input" placeholder="77 000 00 00" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none font-bold text-slate-800">
+          </div>
+
+          <div id="payment-status-box" class="hidden p-3 rounded-xl text-xs font-semibold text-center"></div>
+
+          <button onclick="confirmPaymentAndActivate()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm py-4 rounded-xl shadow-lg transition flex items-center justify-center">
+            <i class="fa-solid fa-lock mr-2"></i> CONFIRMER ET PAYER MAINTENANT
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: COMPANY CONFIGURATION              -->
+    <!-- ========================================== -->
+    <section id="view-setup" class="view-panel hidden space-y-6">
+      <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm max-w-3xl mx-auto">
+        <div class="border-b border-slate-200 pb-4 mb-6 flex justify-between items-center">
+          <div>
+            <h2 class="text-2xl font-black text-slate-900">CONFIGUREZ VOTRE FACTURE</h2>
+            <p class="text-xs text-slate-500 mt-1">Renseignez les coordonnées de votre entreprise une seule fois.</p>
+          </div>
+          <span class="bg-brand-50 text-brand-700 font-bold text-xs px-3 py-1.5 rounded-full border border-brand-200">Mon Entreprise</span>
+        </div>
+
+        <form id="company-setup-form" onsubmit="saveCompanySetup(event)" class="space-y-5">
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nom de l'entreprise *</label>
+              <input type="text" id="setup-name" required placeholder="ex: QUINCAILLERIE GENERALE" class="w-full p-3 text-xs border border-slate-300 rounded-xl font-bold focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Logo de l'entreprise (Facultatif)</label>
+              <input type="file" id="setup-logo-file" accept="image/*" onchange="handleLogoUpload(this)" class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
+              <div id="setup-logo-preview-container" class="mt-2 hidden flex items-center space-x-2">
+                <img id="setup-logo-preview" src="" alt="Logo Preview" class="h-10 object-contain border p-1 rounded">
+                <button type="button" onclick="clearLogo()" class="text-xs text-red-600 hover:underline font-semibold">Supprimer</button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Secteur d'activité / Spécialités *</label>
+            <input type="text" id="setup-activity" required placeholder="ex: Vente de Matériaux de Construction - Outillage - Peinture" class="w-full p-3 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Adresse *</label>
+              <input type="text" id="setup-address" required placeholder="ex: Avenue Lamine Gueye, Dakar" class="w-full p-2.5 text-xs border border-slate-300 rounded-lg">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Boîte Postale (BP)</label>
+              <input type="text" id="setup-bp" placeholder="ex: BP 12000" class="w-full p-2.5 text-xs border border-slate-300 rounded-lg">
+            </div>
+          </div>
+
+          <div class="grid sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">RCCM</label>
+              <input type="text" id="setup-rccm" placeholder="ex: SN.DKR.2026.B.1234" class="w-full p-2.5 text-xs border border-slate-300 rounded-lg">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Téléphone *</label>
+              <input type="text" id="setup-tel" required placeholder="ex: 33 821 00 00 / 77 123 45 67" class="w-full p-2.5 text-xs border border-slate-300 rounded-lg font-bold">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">E-mail</label>
+              <input type="email" id="setup-email" placeholder="ex: contact@entreprise.sn" class="w-full p-2.5 text-xs border border-slate-300 rounded-lg">
+            </div>
+          </div>
+
+          <div class="pt-4 flex justify-end">
+            <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-sm px-8 py-3.5 rounded-xl shadow-lg transition flex items-center">
+              <i class="fa-solid fa-floppy-disk mr-2"></i> ENREGISTRER MON ENTREPRISE
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 3: INVOICE GENERATOR                  -->
+    <!-- ========================================== -->
+    <section id="view-generator" class="view-panel hidden space-y-6">
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3 no-print">
+        <div class="flex items-center space-x-2">
+          <span class="font-extrabold text-slate-900 text-base sm:text-lg">Créer Une Facture</span>
+          <span class="bg-emerald-100 text-emerald-800 font-bold text-xs px-2.5 py-1 rounded-full">
+            <i class="fa-solid fa-calendar-day mr-1"></i> <span id="toolbar-auto-date">28/09/2026</span>
+          </span>
+          <span id="generator-admin-badge" class="hidden bg-amber-100 text-amber-900 font-black text-xs px-2.5 py-1 rounded-full border border-amber-300">
+            <i class="fa-solid fa-shield mr-1"></i> ACCÈS ADMIN GRATUIT
+          </span>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="createNewInvoiceForm()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold px-3 py-2 rounded-xl transition">
+            <i class="fa-solid fa-file-circle-plus mr-1"></i> Nouvelle Facture
+          </button>
+          <button onclick="triggerPrintInvoice()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow transition flex items-center">
+            <i class="fa-solid fa-print mr-1.5"></i> IMPRIMER
+          </button>
+          <button onclick="downloadInvoiceImage()" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow transition flex items-center">
+            <i class="fa-solid fa-image mr-1.5"></i> TÉLÉCHARGER EN IMAGE
+          </button>
+          <button onclick="shareInvoiceWhatsApp()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow transition flex items-center">
+            <i class="fa-brands fa-whatsapp mr-1.5"></i> ENVOYER SUR WHATSAPP
+          </button>
+        </div>
+      </div>
+
+      <div class="grid lg:col-span-12 lg:grid-cols-12 gap-6 items-start">
+        <!-- Input Form -->
+        <div class="lg:col-span-5 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-5 no-print">
+          <h3 class="text-xs font-bold text-slate-900 border-b pb-2 uppercase tracking-wider">Informations du Client & Produits</h3>
+
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Nom du Client *</label>
+              <input type="text" id="input-client-name" oninput="updateLiveInvoice()" placeholder="ex: ENTREPRISE BTP GENERAL DAKAR" class="w-full p-2.5 text-xs border border-slate-300 rounded-xl font-bold text-slate-900 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Numéro du Client (Facultatif)</label>
+              <input type="text" id="input-client-phone" oninput="updateLiveInvoice()" placeholder="ex: 77 987 65 43" class="w-full p-2.5 text-xs border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            </div>
+          </div>
+
+          <div class="space-y-3 pt-2 border-t border-slate-100">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-extrabold text-slate-900 uppercase">Liste des produits</label>
+              <button onclick="addProductLine()" class="bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-extrabold px-3 py-1.5 rounded-lg transition flex items-center">
+                <i class="fa-solid fa-plus-circle mr-1"></i> + AJOUTER UN PRODUIT
+              </button>
+            </div>
+
+            <div id="product-rows-container" class="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+              <!-- Dynamic rows inserted via JS -->
+            </div>
+          </div>
+
+          <div class="bg-slate-900 text-white p-4 rounded-2xl flex justify-between items-center shadow">
+            <div>
+              <span class="text-[10px] font-medium text-slate-400 uppercase block">SOMME TOTALE À PAYER</span>
+              <span id="calculated-sum-display" class="text-xl font-black text-amber-400">0 FCFA</span>
+            </div>
+            <button onclick="saveCurrentInvoiceToHistory()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow transition flex items-center">
+              <i class="fa-solid fa-bookmark mr-1.5"></i> Enregistrer
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Document Preview -->
+        <div class="lg:col-span-7 overflow-x-auto bg-slate-200/80 p-4 sm:p-6 rounded-3xl border border-slate-300 shadow-inner flex justify-center">
+          <div id="printable-wrapper">
+            <div id="live-invoice-paper" class="a4-paper">
+              <div class="flex justify-between items-start">
+                <div class="w-3/5 space-y-0.5">
+                  <div id="render-company-logo-wrap" class="mb-2 hidden">
+                    <img id="render-company-logo" src="" alt="Logo" class="h-12 object-contain">
+                  </div>
+                  <div class="font-extrabold text-xl tracking-wide uppercase text-black leading-snug" id="render-company-name">NOM DE VOTRE ENTREPRISE</div>
+                  <div class="text-xs font-semibold text-slate-900" id="render-company-activity">Secteur d'activité</div>
+                  <div class="text-xs text-slate-800 mt-2 font-medium">
+                    <span id="render-company-address">Adresse</span> <span id="render-bp-wrap">- B.P. <span id="render-company-bp">1000</span></span> <span id="render-rccm-wrap">- R.C.C.M : <span id="render-company-rccm">SN-1234</span></span>
+                  </div>
+                  <div class="text-xs font-bold text-slate-900">
+                    Tél. : <span id="render-company-tel">33 000 00 00</span> <span id="render-email-wrap">- Email : <span id="render-company-email">email@domaine.com</span></span>
+                  </div>
+                </div>
+
+                <div class="w-2/5 flex flex-col items-end">
+                  <div class="text-xs font-bold text-black mb-2">
+                    Date : <span id="render-header-date" class="border-b border-dotted border-black px-4">28/09/2026</span>
+                  </div>
+                  <div class="border-2 border-black p-3 text-center w-48 bg-white">
+                    <div class="font-black text-xl tracking-widest uppercase">
+                      FACTURE
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-6 border-2 border-black p-2.5 flex justify-between items-center text-xs font-bold bg-white">
+                <div class="space-y-1">
+                  <div>CLIENT : <span id="render-client-name" class="font-extrabold underline uppercase">_______________________</span></div>
+                  <div>NUMÉRO DU CLIENT : <span id="render-client-phone" class="font-semibold">_______________________</span></div>
+                </div>
+                <div class="text-right">
+                  Date : <span id="render-client-date">28/09/2026</span>
+                </div>
+              </div>
+
+              <table class="doc-table mt-4">
+                <thead>
+                  <tr>
+                    <th style="width: 15%;">QUANTITÉ</th>
+                    <th style="width: 45%;">PRODUITS</th>
+                    <th style="width: 20%;">PRIX UNITAIRE</th>
+                    <th style="width: 20%;">PRIX TOTAL</th>
+                  </tr>
+                </thead>
+                <tbody id="render-table-body">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+
+              <div class="mt-4 flex justify-end">
+                <div class="border-2 border-black px-6 py-2 text-sm font-black bg-white flex items-center space-x-4">
+                  <span>SOMME TOTALE À PAYER :</span>
+                  <span id="render-grand-total" class="text-base">0 FCFA</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 4: INVOICE HISTORY                    -->
+    <!-- ========================================== -->
+    <section id="view-history" class="view-panel hidden space-y-6">
+      <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-4">
+          <div>
+            <h2 class="text-2xl font-black text-slate-900">MES FACTURES</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Historique complet de vos factures créées</p>
+          </div>
+          
+          <input type="text" id="history-search-input" onkeyup="filterHistoryTable()" placeholder="Rechercher par client ou date..." class="p-2.5 text-xs border border-slate-300 rounded-xl w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-100 text-slate-700 uppercase font-bold text-[11px] border-y border-slate-200">
+              <tr>
+                <th class="p-3">Date</th>
+                <th class="p-3">Client</th>
+                <th class="p-3">Numéro Client</th>
+                <th class="p-3">Somme Totale</th>
+                <th class="p-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="history-table-body" class="divide-y divide-slate-100">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+          <div id="history-empty-msg" class="text-center py-12 text-slate-400">
+            <i class="fa-solid fa-folder-open text-4xl mb-3 block"></i>
+            Aucune facture enregistrée dans votre historique.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 5: SPECIAL ADMIN SPACE                -->
+    <!-- ========================================== -->
+    <section id="view-admin" class="view-panel hidden space-y-8">
+      <!-- Admin Header Banner -->
+      <div class="bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900 text-white p-6 sm:p-8 rounded-3xl border border-amber-500/30 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
+        <div class="space-y-1 relative z-10">
+          <div class="inline-flex items-center space-x-2 bg-amber-500/20 text-amber-300 px-3 py-1 rounded-full text-xs font-black uppercase border border-amber-500/30 mb-2">
+            <i class="fa-solid fa-crown"></i> Espace Administrateur Propriétaire
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black tracking-tight">TABLEAU DE BORD DE GESTION</h2>
+          <p class="text-xs text-slate-300 max-w-xl">Superviser les utilisateurs, consulter les ventes et paiements, configurer le prix de l'application et accéder gratuitement à la création de factures.</p>
+        </div>
+
+        <div class="flex flex-wrap gap-2 relative z-10">
+          <button onclick="navigateTo('generator')" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs px-4 py-3 rounded-xl shadow-lg transition flex items-center">
+            <i class="fa-solid fa-plus-circle mr-2 text-sm"></i> CRÉER UNE FACTURE (GRATUIT)
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Metrics Overview -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Revenus Totaux</span>
+            <span class="text-xl sm:text-2xl font-black text-slate-900" id="admin-stat-revenue">0 FCFA</span>
+          </div>
+          <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center font-bold text-lg">
+            <i class="fa-solid fa-wallet"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Utilisateurs Inscrits</span>
+            <span class="text-xl sm:text-2xl font-black text-slate-900" id="admin-stat-users">0</span>
+          </div>
+          <div class="w-10 h-10 bg-blue-50 text-brand-600 rounded-xl flex items-center justify-center font-bold text-lg">
+            <i class="fa-solid fa-users"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Ventes Effectuées</span>
+            <span class="text-xl sm:text-2xl font-black text-slate-900" id="admin-stat-sales">0</span>
+          </div>
+          <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center font-bold text-lg">
+            <i class="fa-solid fa-cart-check"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Factures Générées</span>
+            <span class="text-xl sm:text-2xl font-black text-slate-900" id="admin-stat-invoices">0</span>
+          </div>
+          <div class="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center font-bold text-lg">
+            <i class="fa-solid fa-file-invoice"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Tabs Navigation -->
+      <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="border-b border-slate-200 bg-slate-50 p-2 flex flex-wrap gap-1">
+          <button onclick="switchAdminTab('users')" id="adm-tab-users" class="adm-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-white shadow-sm border border-slate-200">
+            <i class="fa-solid fa-users mr-1.5"></i> Gestion Utilisateurs
+          </button>
+          <button onclick="switchAdminTab('payments')" id="adm-tab-payments" class="adm-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800">
+            <i class="fa-solid fa-receipt mr-1.5"></i> Ventes & Paiements
+          </button>
+          <button onclick="switchAdminTab('settings')" id="adm-tab-settings" class="adm-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800">
+            <i class="fa-solid fa-sliders mr-1.5"></i> Prix & Paramètres
+          </button>
+          <button onclick="switchAdminTab('invoices')" id="adm-tab-invoices" class="adm-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800">
+            <i class="fa-solid fa-boxes-stacked mr-1.5"></i> Factures Créées
+          </button>
+        </div>
+
+        <!-- TAB 1: USER MANAGEMENT -->
+        <div id="admin-panel-users" class="p-6 space-y-4">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div>
+              <h3 class="text-lg font-black text-slate-900">Comptes Utilisateurs & Vendeurs</h3>
+              <p class="text-xs text-slate-500">Gérez les accès, rôles et statuts d'activation des clients.</p>
+            </div>
+            <button onclick="openCreateUserModal()" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition">
+              <i class="fa-solid fa-user-plus mr-1.5"></i> Ajouter Un Utilisateur
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-slate-100 text-slate-700 uppercase font-bold text-[11px] border-y border-slate-200">
+                <tr>
+                  <th class="p-3">Utilisateur</th>
+                  <th class="p-3">E-mail</th>
+                  <th class="p-3">Rôle</th>
+                  <th class="p-3">Statut Achat</th>
+                  <th class="p-3">Compte Actif</th>
+                  <th class="p-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-table-body" class="divide-y divide-slate-100">
+                <!-- Dynamic user rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 2: PAYMENTS & SALES -->
+        <div id="admin-panel-payments" class="p-6 space-y-4 hidden">
+          <div>
+            <h3 class="text-lg font-black text-slate-900">Historique Des Achats & Paiements</h3>
+            <p class="text-xs text-slate-500">Liste des licences achetées via Wave et Orange Money.</p>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-slate-100 text-slate-700 uppercase font-bold text-[11px] border-y border-slate-200">
+                <tr>
+                  <th class="p-3">Date</th>
+                  <th class="p-3">Utilisateur</th>
+                  <th class="p-3">Moyen de Paiement</th>
+                  <th class="p-3">Téléphone</th>
+                  <th class="p-3">Montant</th>
+                  <th class="p-3">Statut</th>
+                </tr>
+              </thead>
+              <tbody id="admin-payments-table-body" class="divide-y divide-slate-100">
+                <!-- Dynamic payment rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 3: SETTINGS & PRICING -->
+        <div id="admin-panel-settings" class="p-6 space-y-6 hidden max-w-2xl">
+          <div>
+            <h3 class="text-lg font-black text-slate-900">Paramètres de l'Application & Tarification</h3>
+            <p class="text-xs text-slate-500">Ajustez le prix de la facture/licence payée par les utilisateurs normaux.</p>
+          </div>
+
+          <form onsubmit="saveAdminSettings(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Prix de la Licence / Facture (FCFA) *</label>
+              <input type="number" id="setting-invoice-price" required min="0" step="500" class="w-full p-3 text-sm border border-slate-300 rounded-xl font-black text-slate-900 focus:ring-2 focus:ring-amber-500">
+              <p class="text-[11px] text-slate-500 mt-1">Montant facturé aux vendeurs/clients normaux lors du clic sur "ACHETER MA FACTURE".</p>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Message d'accueil personnalisé pour les Vendeurs</label>
+              <textarea id="setting-custom-notice" rows="3" class="w-full p-3 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500" placeholder="Ex: Bienvenue sur FacturePRO. Vos factures sont sauvegardées en sécurité."></textarea>
+            </div>
+
+            <div class="pt-2">
+              <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow transition">
+                <i class="fa-solid fa-floppy-disk mr-1.5"></i> ENREGISTRER LES PARAMÈTRES
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- TAB 4: GLOBAL INVOICES CONSULTATION -->
+        <div id="admin-panel-invoices" class="p-6 space-y-4 hidden">
+          <div>
+            <h3 class="text-lg font-black text-slate-900">Supervision De Toutes Les Factures Créées</h3>
+            <p class="text-xs text-slate-500">Vue globale des factures enregistrées par tous les utilisateurs.</p>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-slate-100 text-slate-700 uppercase font-bold text-[11px] border-y border-slate-200">
+                <tr>
+                  <th class="p-3">Date</th>
+                  <th class="p-3">Créateur</th>
+                  <th class="p-3">Client</th>
+                  <th class="p-3">Montant Total</th>
+                  <th class="p-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-invoices-table-body" class="divide-y divide-slate-100">
+                <!-- Dynamic invoice inspection rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Notification Toast Box -->
+    <div id="toast-notification" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 text-xs font-bold hidden items-center space-x-2 transition">
+      <i class="fa-solid fa-circle-info text-brand-400 text-base" id="toast-icon"></i>
+      <span id="toast-message">Message</span>
+    </div>
+
+  </main>
+
+  <script>
+    /* ==========================================================================
+       GLOBAL APP STATE & STORAGE WITH ADMIN SYSTEM
+       ========================================================================== */
+    const STORAGE_KEY = 'FACTURE_PRO_DATA_V3';
+
+    // Default Super Admin Credentials
+    const DEFAULT_ADMIN_EMAIL = 'admin@facturepro.com';
+
+    let appState = {
+      currentUser: null, // { id, email, name, avatar, role: 'admin'|'user', isPurchased: boolean, active: boolean }
+      settings: {
+        invoicePrice: 5000,
+        customNotice: 'Bienvenue sur FacturePRO Senegal. Créez des factures conformes.'
+      },
+      users: [
+        {
+          id: 'usr_admin_01',
+          name: 'Propriétaire Admin',
+          email: DEFAULT_ADMIN_EMAIL,
+          avatar: 'https://placehold.co/100x100/d97706/ffffff?text=ADM',
+          role: 'admin',
+          isPurchased: true,
+          active: true,
+          createdAt: '2026-09-01'
+        },
+        {
+          id: 'usr_demo_02',
+          name: 'Vendeur Quincaillerie',
+          email: 'vendeur.quincaillerie@gmail.com',
+          avatar: 'https://placehold.co/100x100/0284c7/ffffff?text=VQ',
+          role: 'user',
+          isPurchased: true,
+          active: true,
+          createdAt: '2026-09-15'
+        }
+      ],
+      payments: [
+        {
+          id: 'pay_1001',
+          userEmail: 'vendeur.quincaillerie@gmail.com',
+          method: 'wave',
+          phone: '77 123 45 67',
+          amount: 5000,
+          date: '15/09/2026',
+          status: 'confirmé'
+        }
+      ],
+      company: {
+        name: 'SOCIÉTÉ COMMERCIALE QUINCAILLERIE',
+        activity: 'Vente de Matériaux de Construction - Outillage - Peinture',
+        address: 'Avenue Lamine Gueye, Dakar',
+        bp: '12000',
+        rccm: 'SN.DKR.2026.B.1234',
+        tel: '33 821 00 00 / 77 123 45 67',
+        email: '',
+        logo: ''
+      },
+      currentInvoice: {
+        date: getFormattedCurrentDate(),
+        clientName: '',
+        clientPhone: '',
+        items: [
+          { qty: 3, product: 'Ciment SOCOCIM 50kg', unitPrice: 5000 }
+        ]
+      },
+      history: []
+    };
+
+    window.onload = function() {
+      loadStateFromStorage();
+      updateAuthUI();
+      renderLiveInvoice();
+      updateHistoryTable();
+      renderAdminDashboard();
+      
+      document.getElementById('toolbar-auto-date').innerText = appState.currentInvoice.date;
+    };
+
+    function getFormattedCurrentDate() {
+      const now = new Date();
+      const dd = String(now.getDate()).padStart(2, '0');
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const yyyy = now.getFullYear();
+      return `${dd}/${mm}/${yyyy}`;
+    }
+
+    function saveStateToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      } catch (e) {
+        console.error('Storage quota error', e);
+      }
+    }
+
+    function loadStateFromStorage() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          appState = { ...appState, ...parsed };
+          appState.currentInvoice.date = getFormattedCurrentDate();
+        } catch (e) {
+          console.error('State load error', e);
+        }
+      }
+    }
+
+    function showToast(message, iconClass = 'fa-circle-info') {
+      const toast = document.getElementById('toast-notification');
+      document.getElementById('toast-message').innerText = message;
+      document.getElementById('toast-icon').className = `fa-solid ${iconClass} text-brand-400 text-base`;
+      toast.classList.remove('hidden');
+      toast.classList.add('flex');
+
+      setTimeout(() => {
+        toast.classList.add('hidden');
+        toast.classList.remove('flex');
+      }, 3500);
+    }
+
+    /* ==========================================================================
+       ROLES & ACCESS AUTHORIZATION GUARD
+       ========================================================================== */
+    function isAdmin() {
+      return appState.currentUser && appState.currentUser.role === 'admin';
+    }
+
+    function isPaidOrAdmin() {
+      if (!appState.currentUser) return false;
+      if (isAdmin()) return true; // Admin ALWAYS bypasses payment
+      return appState.currentUser.isPurchased === true && appState.currentUser.active !== false;
+    }
+
+    function navigateTo(viewId) {
+      // Guard features
+      if (viewId === 'admin' && !isAdmin()) {
+        showToast("Accès réservé exclusivement à l'Administrateur.", "fa-lock");
+        return;
+      }
+
+      if ((viewId === 'generator' || viewId === 'setup' || viewId === 'history') && !isPaidOrAdmin()) {
+        handleMainActionClick();
+        return;
+      }
+
+      document.querySelectorAll('.view-panel').forEach(panel => panel.classList.add('hidden'));
+      const target = document.getElementById(`view-${viewId}`);
+      if (target) {
+        target.classList.remove('hidden');
+      }
+
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        if (btn.dataset.view === viewId) {
+          btn.classList.add('bg-slate-800', 'text-white');
+          btn.classList.remove('text-slate-300');
+        } else {
+          btn.classList.remove('bg-slate-800', 'text-white');
+          btn.classList.add('text-slate-300');
+        }
+      });
+
+      if (viewId === 'setup') {
+        populateCompanySetupForm();
+      } else if (viewId === 'generator') {
+        populateGeneratorInputs();
+      } else if (viewId === 'admin') {
+        renderAdminDashboard();
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function scrollToPreview() {
+      document.getElementById('landing-preview-section').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function handleMainActionClick() {
+      if (!appState.currentUser) {
+        // Step 1: Login prompt
+        document.getElementById('modal-auth-title').innerText = 'Connexion Recommandée';
+        document.getElementById('modal-auth-subtitle').innerText = 'Identifiez-vous pour accéder à vos factures';
+        document.getElementById('auth-step-container').classList.remove('hidden');
+        document.getElementById('payment-step-container').classList.add('hidden');
+        document.getElementById('modal-auth-pay').classList.remove('hidden');
+      } else if (isAdmin()) {
+        // ADMIN LOGIN BYPASS -> DIRECT GENERATOR ACCESS
+        navigateTo('generator');
+        showToast("Accès Administrateur Gratuit Activé", "fa-shield-check");
+      } else if (!appState.currentUser.isPurchased) {
+        // Standard user payment step
+        const price = appState.settings.invoicePrice || 5000;
+        document.getElementById('payment-amount-display').innerText = `${formatNumber(price)} FCFA`;
+        document.getElementById('modal-auth-title').innerText = 'Acheter Votre Licence';
+        document.getElementById('modal-auth-subtitle').innerText = 'Accès illimité pour votre entreprise';
+        document.getElementById('auth-step-container').classList.add('hidden');
+        document.getElementById('payment-step-container').classList.remove('hidden');
+        document.getElementById('modal-auth-pay').classList.remove('hidden');
+      } else {
+        navigateTo('generator');
+      }
+    }
+
+    function closeAuthPayModal() {
+      document.getElementById('modal-auth-pay').classList.add('hidden');
+    }
+
+    /* ==========================================================================
+       AUTHENTICATION & USER LOGIN LOGIC
+       ========================================================================== */
+    function loginAsAdminDirectly() {
+      let adminRecord = appState.users.find(u => u.role === 'admin');
+      if (!adminRecord) {
+        adminRecord = {
+          id: 'usr_admin_' + Date.now(),
+          name: 'Propriétaire Admin',
+          email: DEFAULT_ADMIN_EMAIL,
+          avatar: 'https://placehold.co/100x100/d97706/ffffff?text=ADM',
+          role: 'admin',
+          isPurchased: true,
+          active: true,
+          createdAt: getFormattedCurrentDate()
+        };
+        appState.users.push(adminRecord);
+      }
+
+      appState.currentUser = adminRecord;
+      saveStateToStorage();
+      updateAuthUI();
+      closeAuthPayModal();
+      showToast('Connecté en tant qu\'ADMINISTRATEUR (Gratuit)', 'fa-crown');
+      navigateTo('admin');
+    }
+
+    function simulateGoogleLogin() {
+      const email = 'utilisateur.google@gmail.com';
+      authenticateOrCreateUser('Utilisateur Google', email, 'https://placehold.co/100x100/0284c7/ffffff?text=UG');
+    }
+
+    function loginWithEmail() {
+      const email = document.getElementById('input-auth-email').value.trim();
+      if (!email || !email.includes('@')) {
+        showToast('Veuillez saisir un e-mail valide.', 'fa-triangle-exclamation');
+        return;
+      }
+
+      const namePrefix = email.split('@')[0];
+      const avatar = `https://placehold.co/100x100/0284c7/ffffff?text=${namePrefix.substring(0, 2).toUpperCase()}`;
+      authenticateOrCreateUser(namePrefix, email, avatar);
+    }
+
+    function authenticateOrCreateUser(name, email, avatar) {
+      // Check if this is the registered super admin email
+      const isAdminEmail = email.toLowerCase() === DEFAULT_ADMIN_EMAIL.toLowerCase();
+
+      let existingUser = appState.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+      if (!existingUser) {
+        existingUser = {
+          id: 'usr_' + Date.now(),
+          name: name,
+          email: email,
+          avatar: avatar,
+          role: isAdminEmail ? 'admin' : 'user',
+          isPurchased: isAdminEmail ? true : false,
+          active: true,
+          createdAt: getFormattedCurrentDate()
+        };
+        appState.users.push(existingUser);
+      }
+
+      appState.currentUser = existingUser;
+      saveStateToStorage();
+      updateAuthUI();
+
+      if (existingUser.role === 'admin' || existingUser.isPurchased) {
+        closeAuthPayModal();
+        showToast(`Bienvenue, ${existingUser.name}!`, 'fa-circle-check');
+        navigateTo(existingUser.role === 'admin' ? 'admin' : 'generator');
+      } else {
+        // Show Payment Screen for normal un-purchased users
+        const price = appState.settings.invoicePrice || 5000;
+        document.getElementById('payment-amount-display').innerText = `${formatNumber(price)} FCFA`;
+        document.getElementById('auth-step-container').classList.add('hidden');
+        document.getElementById('payment-step-container').classList.remove('hidden');
+      }
+    }
+
+    function logoutUser(e) {
+      if (e) e.stopPropagation();
+      appState.currentUser = null;
+      saveStateToStorage();
+      updateAuthUI();
+      navigateTo('landing');
+      showToast('Vous avez été déconnecté.', 'fa-right-from-bracket');
+    }
+
+    function confirmPaymentAndActivate() {
+      const phone = document.getElementById('pay-phone-input').value;
+      const statusBox = document.getElementById('payment-status-box');
+
+      if (!phone || phone.trim().length < 6) {
+        statusBox.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-800');
+        statusBox.classList.add('bg-red-100', 'text-red-800');
+        statusBox.innerText = 'Veuillez renseigner un numéro de téléphone mobile.';
+        return;
+      }
+
+      statusBox.classList.remove('hidden', 'bg-red-100', 'text-red-800');
+      statusBox.classList.add('bg-blue-100', 'text-blue-800');
+      statusBox.innerText = 'Validation du paiement Mobile Money...';
+
+      const method = document.querySelector('input[name="pay_method"]:checked')?.value || 'wave';
+      const amount = appState.settings.invoicePrice || 5000;
+
+      setTimeout(() => {
+        if (appState.currentUser) {
+          appState.currentUser.isPurchased = true;
+
+          // Update in users database
+          const userInDb = appState.users.find(u => u.id === appState.currentUser.id);
+          if (userInDb) userInDb.isPurchased = true;
+
+          // Record payment transaction for Admin tracking
+          appState.payments.unshift({
+            id: 'pay_' + Date.now(),
+            userEmail: appState.currentUser.email,
+            method: method,
+            phone: phone,
+            amount: amount,
+            date: getFormattedCurrentDate(),
+            status: 'confirmé'
+          });
+
+          saveStateToStorage();
+          updateAuthUI();
+        }
+
+        statusBox.classList.remove('bg-blue-100', 'text-blue-800');
+        statusBox.classList.add('bg-emerald-100', 'text-emerald-800');
+        statusBox.innerText = 'PAIEMENT CONFIRMÉ ! Ouverture de votre espace...';
+
+        setTimeout(() => {
+          closeAuthPayModal();
+          navigateTo('setup');
+          showToast('Licence activée avec succès !', 'fa-circle-check');
+        }, 1000);
+      }, 1500);
+    }
+
+    function updateAuthUI() {
+      const u = appState.currentUser;
+      const userIsAdmin = isAdmin();
+      const userHasAccess = isPaidOrAdmin();
+
+      document.getElementById('nav-generator').classList.toggle('hidden', !userHasAccess);
+      document.getElementById('nav-history').classList.toggle('hidden', !userHasAccess);
+      document.getElementById('nav-setup').classList.toggle('hidden', !userHasAccess);
+      document.getElementById('nav-admin').classList.toggle('hidden', !userIsAdmin);
+      document.getElementById('generator-admin-badge').classList.toggle('hidden', !userIsAdmin);
+      document.getElementById('hero-admin-shortcut').classList.toggle('hidden', !userIsAdmin);
+
+      const mainBtn = document.getElementById('btn-main-action');
+      const heroBtn = document.getElementById('hero-cta-btn');
+
+      if (userIsAdmin) {
+        mainBtn.innerHTML = '<i class="fa-solid fa-crown mr-2"></i> CRÉER UNE FACTURE';
+        mainBtn.className = 'bg-amber-600 hover:bg-amber-700 text-white font-black text-xs sm:text-sm px-4 py-2 rounded-xl shadow transition';
+        if (heroBtn) heroBtn.innerHTML = '<i class="fa-solid fa-plus-circle mr-3 text-xl"></i> CRÉER UNE FACTURE';
+      } else if (userHasAccess) {
+        mainBtn.innerHTML = '<i class="fa-solid fa-plus-circle mr-2"></i> CRÉER UNE FACTURE';
+        mainBtn.className = 'bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm px-4 py-2 rounded-xl shadow transition';
+        if (heroBtn) heroBtn.innerHTML = '<i class="fa-solid fa-plus-circle mr-3 text-xl"></i> CRÉER UNE FACTURE';
+      } else {
+        mainBtn.innerHTML = '<i class="fa-solid fa-cart-shopping mr-2"></i> ACHETER MA FACTURE';
+        mainBtn.className = 'bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-xs sm:text-sm px-4 py-2 rounded-xl shadow transition';
+        if (heroBtn) heroBtn.innerHTML = '<i class="fa-solid fa-cart-shopping mr-3 text-xl"></i> ACHETER MA FACTURE';
+      }
+
+      const userBadge = document.getElementById('user-profile-badge');
+      if (u) {
+        document.getElementById('user-name').innerText = u.name;
+        document.getElementById('user-avatar').src = u.avatar || 'https://placehold.co/100x100/0284c7/ffffff?text=U';
+        
+        const roleTag = document.getElementById('user-role-tag');
+        if (u.role === 'admin') {
+          roleTag.innerText = 'ADMIN';
+          roleTag.className = 'text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40';
+        } else {
+          roleTag.innerText = 'VENDEUR';
+          roleTag.className = 'text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30';
+        }
+
+        userBadge.classList.remove('hidden');
+        userBadge.classList.add('flex');
+      } else {
+        userBadge.classList.add('hidden');
+        userBadge.classList.remove('flex');
+      }
+    }
+
+    /* ==========================================================================
+       COMPANY SETUP & INVOICE RENDER LOGIC
+       ========================================================================== */
+    function populateCompanySetupForm() {
+      const c = appState.company;
+      document.getElementById('setup-name').value = c.name || '';
+      document.getElementById('setup-activity').value = c.activity || '';
+      document.getElementById('setup-address').value = c.address || '';
+      document.getElementById('setup-bp').value = c.bp || '';
+      document.getElementById('setup-rccm').value = c.rccm || '';
+      document.getElementById('setup-tel').value = c.tel || '';
+      document.getElementById('setup-email').value = c.email || '';
+
+      if (c.logo) {
+        document.getElementById('setup-logo-preview').src = c.logo;
+        document.getElementById('setup-logo-preview-container').classList.remove('hidden');
+      } else {
+        document.getElementById('setup-logo-preview-container').classList.add('hidden');
+      }
+    }
+
+    function handleLogoUpload(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          appState.company.logo = e.target.result;
+          document.getElementById('setup-logo-preview').src = e.target.result;
+          document.getElementById('setup-logo-preview-container').classList.remove('hidden');
+          renderLiveInvoice();
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function clearLogo() {
+      appState.company.logo = '';
+      document.getElementById('setup-logo-file').value = '';
+      document.getElementById('setup-logo-preview-container').classList.add('hidden');
+      renderLiveInvoice();
+    }
+
+    function saveCompanySetup(e) {
+      e.preventDefault();
+      const c = appState.company;
+      c.name = document.getElementById('setup-name').value.trim();
+      c.activity = document.getElementById('setup-activity').value.trim();
+      c.address = document.getElementById('setup-address').value.trim();
+      c.bp = document.getElementById('setup-bp').value.trim();
+      c.rccm = document.getElementById('setup-rccm').value.trim();
+      c.tel = document.getElementById('setup-tel').value.trim();
+      c.email = document.getElementById('setup-email').value.trim();
+
+      saveStateToStorage();
+      renderLiveInvoice();
+      showToast('Informations de votre entreprise enregistrées !', 'fa-circle-check');
+      navigateTo('generator');
+    }
+
+    function populateGeneratorInputs() {
+      const inv = appState.currentInvoice;
+      document.getElementById('input-client-name').value = inv.clientName || '';
+      document.getElementById('input-client-phone').value = inv.clientPhone || '';
+      renderProductInputRows();
+      renderLiveInvoice();
+    }
+
+    function renderProductInputRows() {
+      const container = document.getElementById('product-rows-container');
+      container.innerHTML = '';
+
+      appState.currentInvoice.items.forEach((item, index) => {
+        const lineTotal = (parseFloat(item.qty) || 0) * (parseFloat(item.unitPrice) || 0);
+        
+        const row = document.createElement('div');
+        row.className = 'flex flex-col sm:flex-row items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200';
+        row.innerHTML = `
+          <div class="w-full sm:w-20">
+            <span class="text-[10px] text-slate-400 font-bold sm:hidden block uppercase">Qté</span>
+            <input type="number" min="1" value="${item.qty}" oninput="updateProductField(${index}, 'qty', this.value)" placeholder="Qté" class="w-full p-2 text-xs border border-slate-300 rounded-lg text-center font-bold">
+          </div>
+          <div class="w-full sm:flex-1">
+            <span class="text-[10px] text-slate-400 font-bold sm:hidden block uppercase">Produit</span>
+            <input type="text" value="${escapeHtml(item.product)}" oninput="updateProductField(${index}, 'product', this.value)" placeholder="Nom du produit" class="w-full p-2 text-xs border border-slate-300 rounded-lg font-medium">
+          </div>
+          <div class="w-full sm:w-28">
+            <span class="text-[10px] text-slate-400 font-bold sm:hidden block uppercase">Prix Unitaire</span>
+            <input type="number" min="0" value="${item.unitPrice}" oninput="updateProductField(${index}, 'unitPrice', this.value)" placeholder="P.U. (FCFA)" class="w-full p-2 text-xs border border-slate-300 rounded-lg text-right font-medium">
+          </div>
+          <div class="w-full sm:w-28 text-right sm:text-right flex sm:flex-col justify-between sm:justify-center items-center">
+            <span class="text-[10px] text-slate-400 font-bold sm:hidden block uppercase">Total</span>
+            <span class="text-xs font-black text-slate-900">${formatNumber(lineTotal)} FCFA</span>
+          </div>
+          <button onclick="removeProductLine(${index})" class="text-red-500 hover:text-red-700 p-1.5 text-sm">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        `;
+        container.appendChild(row);
+      });
+
+      calculateGrandTotal();
+    }
+
+    function addProductLine() {
+      appState.currentInvoice.items.push({ qty: 1, product: '', unitPrice: '' });
+      renderProductInputRows();
+      renderLiveInvoice();
+    }
+
+    function removeProductLine(index) {
+      if (appState.currentInvoice.items.length <= 1) {
+        showToast('La facture doit comporter au moins un produit.', 'fa-circle-exclamation');
+        return;
+      }
+      appState.currentInvoice.items.splice(index, 1);
+      renderProductInputRows();
+      renderLiveInvoice();
+    }
+
+    function updateProductField(index, field, value) {
+      appState.currentInvoice.items[index][field] = value;
+      renderProductInputRows();
+      renderLiveInvoice();
+    }
+
+    function updateLiveInvoice() {
+      appState.currentInvoice.clientName = document.getElementById('input-client-name').value;
+      appState.currentInvoice.clientPhone = document.getElementById('input-client-phone').value;
+      renderLiveInvoice();
+    }
+
+    function renderLiveInvoice() {
+      const c = appState.company;
+      const inv = appState.currentInvoice;
+
+      document.getElementById('render-company-name').innerText = c.name || 'NOM DE VOTRE ENTREPRISE';
+      document.getElementById('render-company-activity').innerText = c.activity || '';
+      document.getElementById('render-company-address').innerText = c.address || 'Adresse';
+      
+      if (c.bp) {
+        document.getElementById('render-bp-wrap').style.display = 'inline';
+        document.getElementById('render-company-bp').innerText = c.bp;
+      } else {
+        document.getElementById('render-bp-wrap').style.display = 'none';
+      }
+
+      if (c.rccm) {
+        document.getElementById('render-rccm-wrap').style.display = 'inline';
+        document.getElementById('render-company-rccm').innerText = c.rccm;
+      } else {
+        document.getElementById('render-rccm-wrap').style.display = 'none';
+      }
+
+      document.getElementById('render-company-tel').innerText = c.tel || '---';
+
+      if (c.email) {
+        document.getElementById('render-email-wrap').style.display = 'inline';
+        document.getElementById('render-company-email').innerText = c.email;
+      } else {
+        document.getElementById('render-email-wrap').style.display = 'none';
+      }
+
+      const logoWrap = document.getElementById('render-company-logo-wrap');
+      const logoImg = document.getElementById('render-company-logo');
+      if (c.logo) {
+        logoImg.src = c.logo;
+        logoWrap.classList.remove('hidden');
+      } else {
+        logoWrap.classList.add('hidden');
+      }
+
+      const dateStr = inv.date || getFormattedCurrentDate();
+      document.getElementById('render-header-date').innerText = dateStr;
+      document.getElementById('render-client-date').innerText = dateStr;
+
+      document.getElementById('render-client-name').innerText = inv.clientName ? inv.clientName.toUpperCase() : '_______________________';
+      document.getElementById('render-client-phone').innerText = inv.clientPhone || '_______________________';
+
+      const tbody = document.getElementById('render-table-body');
+      tbody.innerHTML = '';
+
+      const minRows = 10;
+      const items = inv.items || [];
+      let totalSum = 0;
+
+      for (let i = 0; i < Math.max(minRows, items.length); i++) {
+        const item = items[i] || { qty: '', product: '', unitPrice: '' };
+        
+        let qtyVal = parseFloat(item.qty) || 0;
+        let puVal = parseFloat(item.unitPrice) || 0;
+        let lineTotal = qtyVal * puVal;
+        
+        if (items[i]) {
+          totalSum += lineTotal;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="text-center font-bold">${item.qty !== '' ? item.qty : ''}</td>
+          <td class="font-medium">${escapeHtml(item.product)}</td>
+          <td class="text-right font-medium">${puVal > 0 ? formatNumber(puVal) + ' FCFA' : ''}</td>
+          <td class="text-right font-bold">${lineTotal > 0 ? formatNumber(lineTotal) + ' FCFA' : ''}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      const formattedSum = `${formatNumber(totalSum)} FCFA`;
+      document.getElementById('calculated-sum-display').innerText = formattedSum;
+      document.getElementById('render-grand-total').innerText = formattedSum;
+    }
+
+    function calculateGrandTotal() {
+      let grandTotal = 0;
+      appState.currentInvoice.items.forEach(item => {
+        let qty = parseFloat(item.qty) || 0;
+        let pu = parseFloat(item.unitPrice) || 0;
+        grandTotal += (qty * pu);
+      });
+      return grandTotal;
+    }
+
+    function createNewInvoiceForm() {
+      appState.currentInvoice = {
+        date: getFormattedCurrentDate(),
+        clientName: '',
+        clientPhone: '',
+        items: [{ qty: 1, product: '', unitPrice: '' }]
+      };
+      populateGeneratorInputs();
+      showToast('Nouveau formulaire de facture prêt.', 'fa-circle-plus');
+    }
+
+    function saveCurrentInvoiceToHistory() {
+      const inv = appState.currentInvoice;
+      if (!inv.clientName || inv.clientName.trim() === '') {
+        showToast('Veuillez saisir le nom du client.', 'fa-triangle-exclamation');
+        return;
+      }
+
+      const grandTotal = calculateGrandTotal();
+
+      const record = {
+        id: Date.now(),
+        creatorEmail: appState.currentUser ? appState.currentUser.email : 'anonyme',
+        date: inv.date,
+        clientName: inv.clientName.trim(),
+        clientPhone: inv.clientPhone.trim(),
+        items: JSON.parse(JSON.stringify(inv.items)),
+        totalSum: grandTotal
+      };
+
+      appState.history.unshift(record);
+      saveStateToStorage();
+      updateHistoryTable();
+
+      showToast('Facture enregistrée dans l\'historique !', 'fa-circle-check');
+    }
+
+    function triggerPrintInvoice() {
+      window.print();
+    }
+
+    function downloadInvoiceImage() {
+      const element = document.getElementById('live-invoice-paper');
+      showToast('Génération de l\'image...', 'fa-image');
+
+      html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      }).then(canvas => {
+        const image = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        const fileName = `Facture_${(appState.currentInvoice.clientName || 'Client').replace(/\s+/g, '_')}_${appState.currentInvoice.date.replace(/\//g, '-')}.png`;
+        link.download = fileName;
+        link.href = image;
+        link.click();
+        showToast('Image téléchargée avec succès !', 'fa-circle-check');
+      }).catch(err => {
+        console.error('Image export failed', err);
+        showToast('Erreur lors de l\'exportation image.', 'fa-triangle-exclamation');
+      });
+    }
+
+    async function shareInvoiceWhatsApp() {
+      const element = document.getElementById('live-invoice-paper');
+      showToast('Préparation du partage WhatsApp...', 'fa-brands fa-whatsapp');
+
+      try {
+        const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+        
+        canvas.toBlob(async (blob) => {
+          if (!blob) return;
+          const fileName = `Facture_${appState.currentInvoice.clientName || 'Client'}.png`;
+          const file = new File([blob], fileName, { type: 'image/png' });
+
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({
+                files: [file],
+                title: 'Facture',
+                text: `Bonjour ${appState.currentInvoice.clientName},\nVeuillez trouver ci-joint votre facture.`
+              });
+              return;
+            } catch (shareErr) {
+              console.log('Native share fallback', shareErr);
+            }
+          }
+
+          const link = document.createElement('a');
+          link.download = fileName;
+          link.href = URL.createObjectURL(blob);
+          link.click();
+
+          const grandTotal = calculateGrandTotal();
+          const messageText = `Bonjour ${appState.currentInvoice.clientName},\nVoici votre facture du ${appState.currentInvoice.date}.\nSomme Totale : *${formatNumber(grandTotal)} FCFA*.\n\nMerci pour votre confiance!\n_${appState.company.name}_`;
+          const encoded = encodeURIComponent(messageText);
+
+          let targetUrl = `https://wa.me/`;
+          if (appState.currentInvoice.clientPhone) {
+            const cleanPhone = appState.currentInvoice.clientPhone.replace(/\s+/g, '').replace('+', '');
+            targetUrl = `https://wa.me/${cleanPhone}?text=${encoded}`;
+          } else {
+            targetUrl = `https://wa.me/?text=${encoded}`;
+          }
+
+          window.open(targetUrl, '_blank');
+          showToast('Image téléchargée ! Joignez-la sur WhatsApp.', 'fa-circle-info');
+        }, 'image/png');
+
+      } catch (err) {
+        console.error('WhatsApp share error', err);
+        showToast('Erreur lors du partage WhatsApp.', 'fa-triangle-exclamation');
+      }
+    }
+
+    function updateHistoryTable() {
+      const tbody = document.getElementById('history-table-body');
+      const emptyMsg = document.getElementById('history-empty-msg');
+      tbody.innerHTML = '';
+
+      if (appState.history.length === 0) {
+        emptyMsg.classList.remove('hidden');
+        return;
+      }
+      emptyMsg.classList.add('hidden');
+
+      appState.history.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition border-b border-slate-100';
+        tr.innerHTML = `
+          <td class="p-3 font-semibold text-slate-700">${item.date}</td>
+          <td class="p-3 font-bold text-slate-900">${escapeHtml(item.clientName)}</td>
+          <td class="p-3 font-medium text-slate-600">${escapeHtml(item.clientPhone || '---')}</td>
+          <td class="p-3 font-black text-brand-700">${formatNumber(item.totalSum)} FCFA</td>
+          <td class="p-3 text-right space-x-1">
+            <button onclick="reopenHistoryInvoice(${item.id})" class="bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold text-xs px-2.5 py-1 rounded-lg">
+              <i class="fa-solid fa-folder-open mr-1"></i> Ouvrir
+            </button>
+            <button onclick="deleteHistoryInvoice(${item.id})" class="text-red-500 hover:text-red-700 p-1">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function reopenHistoryInvoice(id) {
+      const found = appState.history.find(h => h.id === id);
+      if (found) {
+        appState.currentInvoice = {
+          date: found.date,
+          clientName: found.clientName,
+          clientPhone: found.clientPhone,
+          items: JSON.parse(JSON.stringify(found.items))
+        };
+        populateGeneratorInputs();
+        navigateTo('generator');
+        showToast('Facture chargée.', 'fa-folder-open');
+      }
+    }
+
+    function deleteHistoryInvoice(id) {
+      appState.history = appState.history.filter(h => h.id !== id);
+      saveStateToStorage();
+      updateHistoryTable();
+      showToast('Facture supprimée.', 'fa-circle-check');
+    }
+
+    function filterHistoryTable() {
+      const query = document.getElementById('history-search-input').value.toLowerCase();
+      const rows = document.querySelectorAll('#history-table-body tr');
+      rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(query) ? '' : 'none';
+      });
+    }
+
+    /* ==========================================================================
+       ADMIN PANEL CONTROLLER & LOGIC
+       ========================================================================== */
+    function renderAdminDashboard() {
+      if (!isAdmin()) return;
+
+      // Calculate Metrics
+      let totalRev = 0;
+      appState.payments.forEach(p => {
+        if (p.status === 'confirmé') totalRev += (parseFloat(p.amount) || 0);
+      });
+
+      document.getElementById('admin-stat-revenue').innerText = `${formatNumber(totalRev)} FCFA`;
+      document.getElementById('admin-stat-users').innerText = appState.users.length;
+      document.getElementById('admin-stat-sales').innerText = appState.payments.length;
+      document.getElementById('admin-stat-invoices').innerText = appState.history.length;
+
+      // Populate Settings form
+      document.getElementById('setting-invoice-price').value = appState.settings.invoicePrice || 5000;
+      document.getElementById('setting-custom-notice').value = appState.settings.customNotice || '';
+
+      // Populate Admin Tables
+      renderAdminUsersTable();
+      renderAdminPaymentsTable();
+      renderAdminInvoicesTable();
+    }
+
+    function switchAdminTab(tabName) {
+      const tabs = ['users', 'payments', 'settings', 'invoices'];
+      tabs.forEach(t => {
+        const panel = document.getElementById(`admin-panel-${t}`);
+        const btn = document.getElementById(`adm-tab-${t}`);
+        if (t === tabName) {
+          panel.classList.remove('hidden');
+          btn.className = 'adm-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold text-slate-800 bg-white shadow-sm border border-slate-200';
+        } else {
+          panel.classList.add('hidden');
+          btn.className = 'adm-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800';
+        }
+      });
+    }
+
+    function renderAdminUsersTable() {
+      const tbody = document.getElementById('admin-users-table-body');
+      tbody.innerHTML = '';
+
+      appState.users.forEach(u => {
+        const isSelf = appState.currentUser && appState.currentUser.id === u.id;
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 border-b border-slate-100';
+        tr.innerHTML = `
+          <td class="p-3 font-bold text-slate-900 flex items-center space-x-2">
+            <img src="${u.avatar}" class="w-6 h-6 rounded-full object-cover border">
+            <span>${escapeHtml(u.name)}</span>
+          </td>
+          <td class="p-3 font-medium text-slate-700">${escapeHtml(u.email)}</td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase ${u.role === 'admin' ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-slate-100 text-slate-800'}">
+              ${u.role}
+            </span>
+          </td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.isPurchased ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+              ${u.isPurchased ? 'Payé / Illimité' : 'Non Payé'}
+            </span>
+          </td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.active !== false ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}">
+              ${u.active !== false ? 'Actif' : 'Désactivé'}
+            </span>
+          </td>
+          <td class="p-3 text-right space-x-1">
+            ${!isSelf ? `
+              <button onclick="toggleUserActivation('${u.id}')" class="text-xs px-2 py-1 rounded font-bold ${u.active !== false ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'}">
+                ${u.active !== false ? 'Désactiver' : 'Activer'}
+              </button>
+              <button onclick="toggleUserRole('${u.id}')" class="text-xs px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded font-bold">
+                Rôle (${u.role === 'admin' ? 'Passer User' : 'Passer Admin'})
+              </button>
+            ` : '<span class="text-[10px] text-slate-400 font-semibold">Compte Actuel</span>'}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function toggleUserActivation(userId) {
+      if (!isAdmin()) return;
+      const u = appState.users.find(usr => usr.id === userId);
+      if (u) {
+        u.active = u.active === false ? true : false;
+        saveStateToStorage();
+        renderAdminDashboard();
+        showToast(`Statut utilisateur mis à jour (${u.name})`, 'fa-circle-check');
+      }
+    }
+
+    function toggleUserRole(userId) {
+      if (!isAdmin()) return;
+      const u = appState.users.find(usr => usr.id === userId);
+      if (u) {
+        u.role = u.role === 'admin' ? 'user' : 'admin';
+        if (u.role === 'admin') u.isPurchased = true;
+        saveStateToStorage();
+        renderAdminDashboard();
+        showToast(`Rôle changé pour ${u.name} (${u.role.toUpperCase()})`, 'fa-user-shield');
+      }
+    }
+
+    function openCreateUserModal() {
+      const email = prompt("E-mail du nouvel utilisateur/vendeur :");
+      if (!email || !email.includes('@')) return;
+
+      const name = prompt("Nom de l'utilisateur :", email.split('@')[0]);
+      if (!name) return;
+
+      const newUser = {
+        id: 'usr_' + Date.now(),
+        name: name.trim(),
+        email: email.trim(),
+        avatar: `https://placehold.co/100x100/0284c7/ffffff?text=${name.substring(0,2).toUpperCase()}`,
+        role: 'user',
+        isPurchased: true, // Admin created accounts are pre-activated
+        active: true,
+        createdAt: getFormattedCurrentDate()
+      };
+
+      appState.users.push(newUser);
+      saveStateToStorage();
+      renderAdminDashboard();
+      showToast(`Utilisateur ${name} créé et activé !`, 'fa-user-plus');
+    }
+
+    function renderAdminPaymentsTable() {
+      const tbody = document.getElementById('admin-payments-table-body');
+      tbody.innerHTML = '';
+
+      if (appState.payments.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">Aucun paiement enregistré.</td></tr>`;
+        return;
+      }
+
+      appState.payments.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 border-b border-slate-100';
+        tr.innerHTML = `
+          <td class="p-3 font-semibold text-slate-700">${p.date}</td>
+          <td class="p-3 font-bold text-slate-900">${escapeHtml(p.userEmail)}</td>
+          <td class="p-3 uppercase font-black text-xs ${p.method === 'wave' ? 'text-cyan-600' : 'text-orange-600'}">
+            <i class="fa-solid ${p.method === 'wave' ? 'fa-water' : 'fa-mobile-screen'} mr-1"></i> ${p.method}
+          </td>
+          <td class="p-3 font-medium">${escapeHtml(p.phone || '---')}</td>
+          <td class="p-3 font-black text-slate-900">${formatNumber(p.amount)} FCFA</td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+              ${p.status}
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderAdminInvoicesTable() {
+      const tbody = document.getElementById('admin-invoices-table-body');
+      tbody.innerHTML = '';
+
+      if (appState.history.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400">Aucune facture enregistrée par les utilisateurs.</td></tr>`;
+        return;
+      }
+
+      appState.history.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 border-b border-slate-100';
+        tr.innerHTML = `
+          <td class="p-3 font-semibold text-slate-700">${item.date}</td>
+          <td class="p-3 font-medium text-slate-600">${escapeHtml(item.creatorEmail || 'Anonyme')}</td>
+          <td class="p-3 font-bold text-slate-900">${escapeHtml(item.clientName)}</td>
+          <td class="p-3 font-black text-brand-700">${formatNumber(item.totalSum)} FCFA</td>
+          <td class="p-3 text-right">
+            <button onclick="reopenHistoryInvoice(${item.id})" class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-xs px-2.5 py-1 rounded-lg">
+              <i class="fa-solid fa-eye mr-1"></i> Inspecter
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function saveAdminSettings(e) {
+      e.preventDefault();
+      if (!isAdmin()) return;
+
+      const newPrice = parseFloat(document.getElementById('setting-invoice-price').value) || 5000;
+      const newNotice = document.getElementById('setting-custom-notice').value.trim();
+
+      appState.settings.invoicePrice = newPrice;
+      appState.settings.customNotice = newNotice;
+
+      saveStateToStorage();
+      showToast('Paramètres de l\'application enregistrés !', 'fa-circle-check');
+    }
+
+    /* Helper Utilities */
+    function formatNumber(val) {
+      const num = parseFloat(val) || 0;
+      return num.toLocaleString('fr-FR');
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+  </script>
+</body>
+</html>
